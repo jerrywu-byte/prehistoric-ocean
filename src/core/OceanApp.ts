@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { DiverControls } from '../controls/DiverControls';
+import { CreatureManager, type CreatureProximityState } from '../creatures/CreatureManager';
+import { PROTOTYPE_CREATURE } from '../creatures/creatureConfig';
 import { createOceanEnvironment } from '../world/createOceanEnvironment';
 
 export class OceanApp {
@@ -8,10 +10,12 @@ export class OceanApp {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly clock = new THREE.Clock();
   private readonly diverControls: DiverControls;
+  private readonly creatureManager: CreatureManager;
 
   constructor(
     private readonly container: HTMLElement,
     onPointerLockChange: (isLocked: boolean) => void,
+    onCreatureProximityChange: (state: CreatureProximityState) => void,
   ) {
     this.scene.background = new THREE.Color(0x031824);
     this.scene.fog = new THREE.FogExp2(0x062536, 0.025);
@@ -37,6 +41,12 @@ export class OceanApp {
       this.renderer.domElement,
       onPointerLockChange,
     );
+    this.creatureManager = new CreatureManager(
+      this.scene,
+      this.camera,
+      PROTOTYPE_CREATURE,
+      onCreatureProximityChange,
+    );
     window.addEventListener('resize', this.handleResize);
   }
 
@@ -45,7 +55,9 @@ export class OceanApp {
   }
 
   private readonly animate = (): void => {
-    this.diverControls.update(this.clock.getDelta());
+    const deltaSeconds = Math.min(this.clock.getDelta(), 0.05);
+    this.diverControls.update(deltaSeconds);
+    this.creatureManager.update(deltaSeconds);
     this.renderer.render(this.scene, this.camera);
   };
 

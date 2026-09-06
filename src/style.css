@@ -122,6 +122,44 @@ canvas {
   transform: translate(-50%, 8px) scale(0.96);
 }
 
+.creature-info {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  min-width: 178px;
+  padding: 11px 14px;
+  flex-direction: column;
+  color: rgb(226 249 252 / 92%);
+  background: rgb(3 20 31 / 55%);
+  border: 1px solid rgb(149 219 228 / 22%);
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgb(0 8 13 / 20%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: opacity 240ms ease, transform 240ms ease;
+  backdrop-filter: blur(7px);
+}
+
+.creature-info.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.creature-info__name {
+  font-size: 0.92rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.creature-info__subtitle {
+  margin-top: 3px;
+  font-size: 0.72rem;
+  color: rgb(190 226 232 / 66%);
+  letter-spacing: 0.05em;
+}
+
 @media (max-width: 560px) {
   .controls-hint__grid {
     grid-template-columns: repeat(2, 1fr);
@@ -129,7 +167,8 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .controls-hint {
+  .controls-hint,
+  .creature-info {
     transition: none;
   }
 }

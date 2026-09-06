@@ -1,6 +1,7 @@
 import './style.css';
 import { OceanApp } from './core/OceanApp';
 import { createControlsHint } from './ui/createControlsHint';
+import { createCreatureInfo } from './ui/createCreatureInfo';
 import { createCrosshair } from './ui/createCrosshair';
 
 const container = document.querySelector<HTMLElement>('#app');
@@ -10,6 +11,11 @@ if (!container) {
 }
 
 const controlsHint = createControlsHint();
-const ocean = new OceanApp(container, controlsHint.setExploring);
+const creatureInfo = createCreatureInfo();
+const ocean = new OceanApp(
+  container,
+  controlsHint.setExploring,
+  creatureInfo.setProximity,
+);
 createCrosshair();
 ocean.start();
