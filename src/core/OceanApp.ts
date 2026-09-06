@@ -10,7 +10,7 @@ export class OceanApp {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly clock = new THREE.Clock();
   private readonly diverControls: DiverControls;
-  private readonly creatureManager: CreatureManager;
+  private creatureManager: CreatureManager | null = null;
 
   constructor(
     private readonly container: HTMLElement,
@@ -41,12 +41,7 @@ export class OceanApp {
       this.renderer.domElement,
       onPointerLockChange,
     );
-    this.creatureManager = new CreatureManager(
-      this.scene,
-      this.camera,
-      PROTOTYPE_CREATURE,
-      onCreatureProximityChange,
-    );
+    this.initializeCreatureManager(onCreatureProximityChange);
     window.addEventListener('resize', this.handleResize);
   }
 
@@ -57,9 +52,48 @@ export class OceanApp {
   private readonly animate = (): void => {
     const deltaSeconds = Math.min(this.clock.getDelta(), 0.05);
     this.diverControls.update(deltaSeconds);
-    this.creatureManager.update(deltaSeconds);
+    this.updateCreatures(deltaSeconds);
     this.renderer.render(this.scene, this.camera);
   };
+
+  private initializeCreatureManager(
+    onCreatureProximityChange: (state: CreatureProximityState) => void,
+  ): void {
+    try {
+      this.creatureManager = new CreatureManager(
+        this.scene,
+        this.camera,
+        PROTOTYPE_CREATURE,
+        onCreatureProximityChange,
+      );
+    } catch (error) {
+      this.disableCreatureSystem('initialization', error);
+    }
+  }
+
+  private updateCreatures(deltaSeconds: number): void {
+    if (!this.creatureManager) {
+      return;
+    }
+
+    try {
+      this.creatureManager.update(deltaSeconds);
+    } catch (error) {
+      this.disableCreatureSystem('update', error);
+    }
+  }
+
+  private disableCreatureSystem(phase: 'initialization' | 'update', error: unknown): void {
+    console.error(`[CreatureManager] ${phase} failed; diver controls remain active.`, error);
+
+    try {
+      this.creatureManager?.dispose();
+    } catch (disposeError) {
+      console.error('[CreatureManager] cleanup failed.', disposeError);
+    }
+
+    this.creatureManager = null;
+  }
 
   private readonly handleResize = (): void => {
     this.camera.aspect = window.innerWidth / window.innerHeight;

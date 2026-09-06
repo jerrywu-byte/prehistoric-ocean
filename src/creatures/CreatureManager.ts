@@ -47,6 +47,11 @@ export class CreatureManager {
     }
 
     const prototype = this.creatures[0];
+
+    if (!prototype) {
+      return;
+    }
+
     const isNearby = prototype.distanceSquaredTo(this.camera.position) <=
       this.config.interactionDistance ** 2;
 
