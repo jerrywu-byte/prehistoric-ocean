@@ -1,4 +1,5 @@
 export interface ControlsHint {
+  readonly startButton: HTMLButtonElement;
   setExploring(isExploring: boolean): void;
 }
 
@@ -14,10 +15,11 @@ export function createControlsHint(): ControlsHint {
   hint.className = 'controls-hint';
   hint.setAttribute('aria-label', '潛水操作說明');
 
-  const start = document.createElement('p');
-  start.className = 'controls-hint__start';
-  start.textContent = '點擊畫面　開始探索';
-  hint.appendChild(start);
+  const startButton = document.createElement('button');
+  startButton.className = 'controls-hint__start-button';
+  startButton.type = 'button';
+  startButton.textContent = '開始探索';
+  hint.appendChild(startButton);
 
   const controls = document.createElement('div');
   controls.className = 'controls-hint__grid';
@@ -38,9 +40,10 @@ export function createControlsHint(): ControlsHint {
   document.body.appendChild(hint);
 
   return {
+    startButton,
     setExploring(isExploring: boolean): void {
       hint.classList.toggle('is-exploring', isExploring);
+      startButton.hidden = isExploring;
     },
   };
 }
-

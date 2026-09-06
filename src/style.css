@@ -74,17 +74,34 @@ canvas {
   backdrop-filter: blur(8px);
 }
 
-.controls-hint__start,
 .controls-hint__escape {
   margin: 0;
   text-align: center;
 }
 
-.controls-hint__start {
-  margin-bottom: 11px;
+.controls-hint__start-button {
+  display: block;
+  margin: 0 auto 11px;
+  padding: 9px 18px;
+  color: #e5fbfe;
   font-size: 1rem;
   font-weight: 650;
+  background: rgb(75 161 178 / 32%);
+  border: 1px solid rgb(180 231 238 / 42%);
+  border-radius: 8px;
+  cursor: pointer;
   letter-spacing: 0.08em;
+  pointer-events: auto;
+}
+
+.controls-hint__start-button:hover,
+.controls-hint__start-button:focus-visible {
+  background: rgb(89 182 199 / 45%);
+  outline: 1px solid rgb(220 250 255 / 65%);
+}
+
+.controls-hint__start-button[hidden] {
+  display: none;
 }
 
 .controls-hint__grid {
@@ -158,6 +175,23 @@ canvas {
   font-size: 0.72rem;
   color: rgb(190 226 232 / 66%);
   letter-spacing: 0.05em;
+}
+
+.pointer-lock-debug {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  padding: 9px 11px;
+  flex-direction: column;
+  gap: 3px;
+  color: rgb(220 250 255 / 82%);
+  font: 500 0.72rem/1.35 ui-monospace, SFMono-Regular, Consolas, monospace;
+  background: rgb(3 20 31 / 48%);
+  border: 1px solid rgb(149 219 228 / 18%);
+  border-radius: 7px;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
 }
 
 @media (max-width: 560px) {

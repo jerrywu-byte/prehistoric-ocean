@@ -34,20 +34,24 @@ export class DiverControls {
   constructor(
     private readonly camera: THREE.PerspectiveCamera,
     private readonly domElement: HTMLElement,
+    private readonly startButton: HTMLButtonElement,
     private readonly onLockChange: (isLocked: boolean) => void,
+    private readonly onCanvasClick: () => void,
+    private readonly onPointerLockError: (errorName: string) => void,
   ) {
     this.pointerLock = new PointerLockControls(camera, domElement);
     this.pointerLock.pointerSpeed = DIVER_MOVEMENT.pointerSpeed;
     this.pointerLock.minPolarAngle = THREE.MathUtils.degToRad(5);
     this.pointerLock.maxPolarAngle = THREE.MathUtils.degToRad(175);
 
-    this.domElement.addEventListener('click', this.handleClick);
+    this.domElement.addEventListener('click', this.handleCanvasClick);
+    this.startButton.addEventListener('click', this.handleStartClick);
     document.addEventListener('keydown', this.handleKeyDown);
     document.addEventListener('keyup', this.handleKeyUp);
+    document.addEventListener('pointerlockchange', this.handlePointerLockChange);
+    document.addEventListener('pointerlockerror', this.handlePointerLockError);
     window.addEventListener('blur', this.clearInput);
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
-    this.pointerLock.addEventListener('lock', this.handleLock);
-    this.pointerLock.addEventListener('unlock', this.handleUnlock);
   }
 
   update(deltaSeconds: number): void {
@@ -75,9 +79,12 @@ export class DiverControls {
     this.clearInput();
     this.pointerLock.unlock();
     this.pointerLock.dispose();
-    this.domElement.removeEventListener('click', this.handleClick);
+    this.domElement.removeEventListener('click', this.handleCanvasClick);
+    this.startButton.removeEventListener('click', this.handleStartClick);
     document.removeEventListener('keydown', this.handleKeyDown);
     document.removeEventListener('keyup', this.handleKeyUp);
+    document.removeEventListener('pointerlockchange', this.handlePointerLockChange);
+    document.removeEventListener('pointerlockerror', this.handlePointerLockError);
     window.removeEventListener('blur', this.clearInput);
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
   }
@@ -107,10 +114,26 @@ export class DiverControls {
     this.desiredVelocity.y += verticalInput * DIVER_MOVEMENT.verticalSpeed;
   }
 
-  private readonly handleClick = (): void => {
-    if (!this.pointerLock.isLocked) {
-      this.pointerLock.lock();
+  private requestPointerLock(): void {
+    if (document.pointerLockElement === this.domElement) {
+      return;
     }
+
+    try {
+      // Keep this call synchronous and directly inside the user's click event.
+      void this.domElement.requestPointerLock();
+    } catch (error) {
+      this.reportPointerLockError(error);
+    }
+  }
+
+  private readonly handleStartClick = (): void => {
+    this.requestPointerLock();
+  };
+
+  private readonly handleCanvasClick = (): void => {
+    this.onCanvasClick();
+    this.requestPointerLock();
   };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
@@ -134,13 +157,27 @@ export class DiverControls {
     this.pressed[movementKey] = false;
   };
 
-  private readonly handleLock = (): void => {
-    this.onLockChange(true);
+  private readonly handlePointerLockChange = (): void => {
+    const isLocked = document.pointerLockElement === this.domElement;
+    console.info('[PointerLock] change:', document.pointerLockElement);
+
+    if (!isLocked) {
+      this.clearInput();
+    }
+
+    this.onLockChange(isLocked);
   };
 
-  private readonly handleUnlock = (): void => {
-    this.clearInput();
-    this.onLockChange(false);
+  private readonly handlePointerLockError = (event: Event): void => {
+    const error = event instanceof ErrorEvent ? event.error : undefined;
+    const errorName = error instanceof DOMException
+      ? error.name
+      : error instanceof Error
+        ? error.name
+        : 'PointerLockError';
+
+    console.error('[PointerLock] pointerlockerror:', errorName, event);
+    this.onPointerLockError(errorName);
   };
 
   private readonly handleVisibilityChange = (): void => {
@@ -154,5 +191,15 @@ export class DiverControls {
       this.pressed[movementKey] = false;
     }
   };
-}
 
+  private reportPointerLockError(error: unknown): void {
+    const errorName = error instanceof DOMException
+      ? error.name
+      : error instanceof Error
+        ? error.name
+        : 'UnknownError';
+
+    console.error('[PointerLock] requestPointerLock failed:', errorName, error);
+    this.onPointerLockError(errorName);
+  }
+}

@@ -14,7 +14,11 @@ export class OceanApp {
 
   constructor(
     private readonly container: HTMLElement,
+    startButton: HTMLButtonElement,
     onPointerLockChange: (isLocked: boolean) => void,
+    onCanvasClick: () => void,
+    onPointerLockError: (errorName: string) => void,
+    private readonly onCameraPositionChange: (x: number, y: number, z: number) => void,
     onCreatureProximityChange: (state: CreatureProximityState) => void,
   ) {
     this.scene.background = new THREE.Color(0x031824);
@@ -39,7 +43,10 @@ export class OceanApp {
     this.diverControls = new DiverControls(
       this.camera,
       this.renderer.domElement,
+      startButton,
       onPointerLockChange,
+      onCanvasClick,
+      onPointerLockError,
     );
     this.initializeCreatureManager(onCreatureProximityChange);
     window.addEventListener('resize', this.handleResize);
@@ -53,6 +60,11 @@ export class OceanApp {
     const deltaSeconds = Math.min(this.clock.getDelta(), 0.05);
     this.diverControls.update(deltaSeconds);
     this.updateCreatures(deltaSeconds);
+    this.onCameraPositionChange(
+      this.camera.position.x,
+      this.camera.position.y,
+      this.camera.position.z,
+    );
     this.renderer.render(this.scene, this.camera);
   };
 
