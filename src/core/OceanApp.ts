@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DiverControls } from '../controls/DiverControls';
 import { createOceanEnvironment } from '../world/createOceanEnvironment';
 
 export class OceanApp {
@@ -6,8 +7,12 @@ export class OceanApp {
   private readonly camera: THREE.PerspectiveCamera;
   private readonly renderer: THREE.WebGLRenderer;
   private readonly clock = new THREE.Clock();
+  private readonly diverControls: DiverControls;
 
-  constructor(private readonly container: HTMLElement) {
+  constructor(
+    private readonly container: HTMLElement,
+    onPointerLockChange: (isLocked: boolean) => void,
+  ) {
     this.scene.background = new THREE.Color(0x031824);
     this.scene.fog = new THREE.FogExp2(0x062536, 0.025);
 
@@ -27,6 +32,11 @@ export class OceanApp {
     this.container.appendChild(this.renderer.domElement);
 
     createOceanEnvironment(this.scene);
+    this.diverControls = new DiverControls(
+      this.camera,
+      this.renderer.domElement,
+      onPointerLockChange,
+    );
     window.addEventListener('resize', this.handleResize);
   }
 
@@ -35,10 +45,7 @@ export class OceanApp {
   }
 
   private readonly animate = (): void => {
-    const elapsed = this.clock.getElapsedTime();
-
-    // Gentle camera drift keeps the prototype visibly alive without adding controls.
-    this.camera.position.y = 3.2 + Math.sin(elapsed * 0.35) * 0.08;
+    this.diverControls.update(this.clock.getDelta());
     this.renderer.render(this.scene, this.camera);
   };
 

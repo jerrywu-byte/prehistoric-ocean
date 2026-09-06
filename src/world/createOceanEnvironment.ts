@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getSeabedHeightAt, WORLD_LIMITS } from './worldLimits';
 
 export function createOceanEnvironment(scene: THREE.Scene): void {
   const ambientLight = new THREE.AmbientLight(0x5f9fb3, 0.8);
@@ -17,8 +18,8 @@ export function createOceanEnvironment(scene: THREE.Scene): void {
   for (let index = 0; index < positions.count; index += 1) {
     const x = positions.getX(index);
     const y = positions.getY(index);
-    const height = Math.sin(x * 0.12) * 0.28 + Math.cos(y * 0.09) * 0.22;
-    positions.setZ(index, height);
+    const worldHeight = getSeabedHeightAt(x, -y);
+    positions.setZ(index, worldHeight - WORLD_LIMITS.seabedBaseY);
   }
 
   seabedGeometry.computeVertexNormals();
@@ -30,6 +31,6 @@ export function createOceanEnvironment(scene: THREE.Scene): void {
   });
   const seabed = new THREE.Mesh(seabedGeometry, seabedMaterial);
   seabed.rotation.x = -Math.PI / 2;
-  seabed.position.y = -1.5;
+  seabed.position.y = WORLD_LIMITS.seabedBaseY;
   scene.add(seabed);
 }
