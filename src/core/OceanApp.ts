@@ -1,0 +1,51 @@
+import * as THREE from 'three';
+import { createOceanEnvironment } from '../world/createOceanEnvironment';
+
+export class OceanApp {
+  private readonly scene = new THREE.Scene();
+  private readonly camera: THREE.PerspectiveCamera;
+  private readonly renderer: THREE.WebGLRenderer;
+  private readonly clock = new THREE.Clock();
+
+  constructor(private readonly container: HTMLElement) {
+    this.scene.background = new THREE.Color(0x031824);
+    this.scene.fog = new THREE.FogExp2(0x062536, 0.025);
+
+    this.camera = new THREE.PerspectiveCamera(
+      65,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      500,
+    );
+    this.camera.position.set(0, 3.2, 10);
+    this.camera.lookAt(0, 1.5, 0);
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.container.appendChild(this.renderer.domElement);
+
+    createOceanEnvironment(this.scene);
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  start(): void {
+    this.renderer.setAnimationLoop(this.animate);
+  }
+
+  private readonly animate = (): void => {
+    const elapsed = this.clock.getElapsedTime();
+
+    // Gentle camera drift keeps the prototype visibly alive without adding controls.
+    this.camera.position.y = 3.2 + Math.sin(elapsed * 0.35) * 0.08;
+    this.renderer.render(this.scene, this.camera);
+  };
+
+  private readonly handleResize = (): void => {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+}
