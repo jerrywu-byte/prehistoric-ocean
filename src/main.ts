@@ -25,6 +25,7 @@ const ocean = new OceanApp(
   pointerLockDebug.setError,
   pointerLockDebug.setCameraPosition,
   creatureInfo.setProximity,
+  pointerLockDebug.setCreatureState,
 );
 createCrosshair();
 ocean.start();

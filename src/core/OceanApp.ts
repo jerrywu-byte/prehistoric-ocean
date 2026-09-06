@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { DiverControls } from '../controls/DiverControls';
-import { CreatureManager, type CreatureProximityState } from '../creatures/CreatureManager';
+import {
+  CreatureManager,
+  type CreatureDebugState,
+  type CreatureProximityState,
+} from '../creatures/CreatureManager';
 import { PROTOTYPE_CREATURE } from '../creatures/creatureConfig';
 import { createOceanEnvironment } from '../world/createOceanEnvironment';
 
@@ -20,6 +24,7 @@ export class OceanApp {
     onPointerLockError: (errorName: string) => void,
     private readonly onCameraPositionChange: (x: number, y: number, z: number) => void,
     onCreatureProximityChange: (state: CreatureProximityState) => void,
+    private readonly onCreatureDebugChange: (state: CreatureDebugState) => void,
   ) {
     this.scene.background = new THREE.Color(0x031824);
     this.scene.fog = new THREE.FogExp2(0x062536, 0.025);
@@ -77,6 +82,7 @@ export class OceanApp {
         this.camera,
         PROTOTYPE_CREATURE,
         onCreatureProximityChange,
+        this.onCreatureDebugChange,
       );
     } catch (error) {
       this.disableCreatureSystem('initialization', error);
@@ -105,6 +111,14 @@ export class OceanApp {
     }
 
     this.creatureManager = null;
+    this.onCreatureDebugChange({
+      count: 0,
+      visible: false,
+      x: 0,
+      y: 0,
+      z: 0,
+      textureLoaded: false,
+    });
   }
 
   private readonly handleResize = (): void => {

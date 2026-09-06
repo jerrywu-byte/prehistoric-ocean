@@ -5,7 +5,12 @@ export interface CreatureConfig {
   readonly displayName: string;
   readonly subtitle: string;
   readonly textureUrl: string;
+  readonly useTexture: boolean;
+  readonly materialColor: number;
+  readonly materialFog: boolean;
   readonly facingMode: CreatureFacingMode;
+  readonly isStatic: boolean;
+  readonly fixedPosition: readonly [number, number, number];
   readonly width: number;
   readonly height: number;
   readonly spawnDistance: number;
@@ -29,9 +34,14 @@ export const PROTOTYPE_CREATURE: CreatureConfig = {
   displayName: '測試生物',
   subtitle: 'Prototype Creature',
   textureUrl: './assets/creatures/prototype-creature.svg',
+  useTexture: false,
+  materialColor: 0xffa500,
+  materialFog: false,
   facingMode: 'billboard',
-  width: 4.2,
-  height: 2.1,
+  isStatic: true,
+  fixedPosition: [0, 3.2, 2],
+  width: 3.2,
+  height: 2,
   spawnDistance: 11,
   spawnHeight: 2.8,
   baseSpeed: 0.46,
@@ -45,5 +55,5 @@ export const PROTOTYPE_CREATURE: CreatureConfig = {
   roamRadius: 9,
   seabedClearance: 1.7,
   boundaryMargin: 4,
-  interactionDistance: 4.5,
+  interactionDistance: 6,
 };

@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { Creature } from './Creature';
 import type { CreatureConfig } from './creatureConfig';
-import { getSeabedHeightAt, WORLD_LIMITS } from '../world/worldLimits';
 
 export interface CreatureProximityState {
   readonly isNearby: boolean;
@@ -9,36 +8,61 @@ export interface CreatureProximityState {
   readonly subtitle: string;
 }
 
+export interface CreatureDebugState {
+  readonly count: number;
+  readonly visible: boolean;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly textureLoaded: boolean;
+}
+
 export class CreatureManager {
   private readonly creatures: Creature[] = [];
   private readonly geometry = new THREE.PlaneGeometry(1, 1);
-  private readonly texture: THREE.Texture;
+  private readonly texture: THREE.Texture | null;
   private readonly material: THREE.MeshBasicMaterial;
-  private readonly spawnPosition = new THREE.Vector3();
-  private readonly forward = new THREE.Vector3();
   private wasNearby = false;
+  private textureLoaded = false;
 
   constructor(
     private readonly scene: THREE.Scene,
     private readonly camera: THREE.PerspectiveCamera,
     private readonly config: CreatureConfig,
     private readonly onProximityChange: (state: CreatureProximityState) => void,
+    private readonly onDebugChange: (state: CreatureDebugState) => void,
   ) {
-    this.texture = new THREE.TextureLoader().load(config.textureUrl);
-    this.texture.colorSpace = THREE.SRGBColorSpace;
+    this.texture = config.useTexture
+      ? new THREE.TextureLoader().load(
+        config.textureUrl,
+        (texture) => {
+          texture.colorSpace = THREE.SRGBColorSpace;
+          this.textureLoaded = true;
+          this.reportDebugState();
+        },
+        undefined,
+        (error) => {
+          console.error('[CreatureManager] texture failed to load:', error);
+          this.textureLoaded = false;
+          this.reportDebugState();
+        },
+      )
+      : null;
 
     this.material = new THREE.MeshBasicMaterial({
+      color: config.materialColor,
       map: this.texture,
-      transparent: true,
-      alphaTest: 0.02,
+      opacity: 1,
+      transparent: false,
       depthTest: true,
-      depthWrite: false,
+      depthWrite: true,
       side: THREE.DoubleSide,
-      fog: true,
+      fog: config.materialFog,
       toneMapped: false,
     });
 
     this.addPrototypeCreature();
+    this.reportDebugState();
   }
 
   update(deltaSeconds: number): void {
@@ -73,37 +97,30 @@ export class CreatureManager {
     this.creatures.length = 0;
     this.geometry.dispose();
     this.material.dispose();
-    this.texture.dispose();
+    this.texture?.dispose();
   }
 
   private addPrototypeCreature(): void {
-    this.camera.getWorldDirection(this.forward);
-    this.forward.y = 0;
-    this.forward.normalize();
-
-    this.spawnPosition.copy(this.camera.position).addScaledVector(
-      this.forward,
-      this.config.spawnDistance,
-    );
-    this.spawnPosition.x = THREE.MathUtils.clamp(
-      this.spawnPosition.x,
-      WORLD_LIMITS.minX + this.config.boundaryMargin,
-      WORLD_LIMITS.maxX - this.config.boundaryMargin,
-    );
-    this.spawnPosition.z = THREE.MathUtils.clamp(
-      this.spawnPosition.z,
-      WORLD_LIMITS.minZ + this.config.boundaryMargin,
-      WORLD_LIMITS.maxZ - this.config.boundaryMargin,
-    );
-    this.spawnPosition.y = Math.max(
-      this.config.spawnHeight,
-      getSeabedHeightAt(this.spawnPosition.x, this.spawnPosition.z) + this.config.seabedClearance,
-    );
-
     const creature = new Creature(this.config, this.geometry, this.material);
-    const initialHeading = Math.atan2(this.forward.z, this.forward.x) + Math.PI / 2;
-    creature.setInitialPosition(this.spawnPosition, initialHeading);
+    creature.object3d.visible = true;
+    creature.setInitialPosition(
+      new THREE.Vector3(...this.config.fixedPosition),
+      0,
+    );
     this.creatures.push(creature);
     this.scene.add(creature.object3d);
+  }
+
+  private reportDebugState(): void {
+    const prototype = this.creatures[0];
+
+    this.onDebugChange({
+      count: this.creatures.length,
+      visible: prototype?.object3d.visible ?? false,
+      x: prototype?.object3d.position.x ?? 0,
+      y: prototype?.object3d.position.y ?? 0,
+      z: prototype?.object3d.position.z ?? 0,
+      textureLoaded: this.textureLoaded,
+    });
   }
 }

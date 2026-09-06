@@ -43,6 +43,11 @@ export class Creature {
   }
 
   update(deltaSeconds: number, camera: THREE.Camera): void {
+    if (this.config.isStatic) {
+      this.updateFacing(camera);
+      return;
+    }
+
     this.elapsedSeconds += deltaSeconds;
 
     const offsetX = this.object3d.position.x - this.anchor.x;
@@ -91,14 +96,18 @@ export class Creature {
       WORLD_LIMITS.maxY - this.config.seabedClearance,
     );
 
+    this.updateFacing(camera);
+  }
+
+  distanceSquaredTo(position: THREE.Vector3): number {
+    return this.object3d.position.distanceToSquared(position);
+  }
+
+  private updateFacing(camera: THREE.Camera): void {
     if (this.config.facingMode === 'billboard') {
       this.object3d.quaternion.copy(camera.quaternion);
     } else {
       this.object3d.rotation.set(0, -this.heading, 0);
     }
-  }
-
-  distanceSquaredTo(position: THREE.Vector3): number {
-    return this.object3d.position.distanceToSquared(position);
   }
 }
