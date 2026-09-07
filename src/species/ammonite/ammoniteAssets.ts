@@ -1,29 +1,27 @@
 import { SRGBColorSpace, TextureLoader, type Texture } from 'three';
 import type { DirectionalAssetSource } from '../SpeciesDefinition';
-import { DIRECTIONAL_VIEWS, type DirectionalTextureSet, type DirectionalView } from '../../creatures/directional/types';
+import { DIRECTIONAL_VIEWS, type DirectionalView } from '../../creatures/directional/types';
 
-// Relative URLs preserve Vite's base: './' and GitHub Pages project subpaths.
-export const AMMONITE_TEXTURE_URLS: Readonly<Record<DirectionalView, string>> = {
-  front: './assets/creatures/ammonite/ammonite_front.png',
-  frontRight: './assets/creatures/ammonite/ammonite_front_right.png',
-  right: './assets/creatures/ammonite/ammonite_right.png',
-  backRight: './assets/creatures/ammonite/ammonite_back_right.png',
-  back: './assets/creatures/ammonite/ammonite_back.png',
-  backLeft: './assets/creatures/ammonite/ammonite_back_left.png',
-  left: './assets/creatures/ammonite/ammonite_left.png',
-  frontLeft: './assets/creatures/ammonite/ammonite_front_left.png',
-};
+import { PITCH_LAYERS, type PitchDirectionalTextureSet, type PitchLayer } from '../../creatures/directional/pitchLayers';
+import { DIRECTIONAL_LABELS } from '../../creatures/directional/types';
 
-export async function getAmmoniteDirectionalTextures(): Promise<DirectionalTextureSet> {
+// Built once. Relative URLs preserve Vite's './' base and Pages project subpaths.
+export const AMMONITE_TEXTURE_URLS = Object.fromEntries(PITCH_LAYERS.map(layer => [
+  layer, Object.fromEntries(DIRECTIONAL_VIEWS.map(view => [
+    view, './assets/creatures/ammonite/ammonite_' + layer + '_' + DIRECTIONAL_LABELS[view].toLowerCase() + '.png',
+  ])),
+])) as Readonly<Record<PitchLayer, Readonly<Record<DirectionalView, string>>>>;
+
+export async function getAmmoniteDirectionalTextures(): Promise<PitchDirectionalTextureSet> {
   const loader = new TextureLoader();
   const owned: Texture[] = [];
-  const textures = {} as Record<DirectionalView, Texture>;
-  const results = await Promise.allSettled(DIRECTIONAL_VIEWS.map(view =>
+  const textures = { top: {}, mid: {}, bottom: {} } as Record<PitchLayer, Record<DirectionalView, Texture>>;
+  const results = await Promise.allSettled(PITCH_LAYERS.flatMap(layer => DIRECTIONAL_VIEWS.map(view =>
     new Promise<void>((resolve, reject) => {
-      const url = AMMONITE_TEXTURE_URLS[view];
+      const url = AMMONITE_TEXTURE_URLS[layer][view];
       const texture = loader.load(url, loaded => {
         loaded.colorSpace = SRGBColorSpace;
-        textures[view] = loaded;
+        textures[layer][view] = loaded;
         resolve();
       }, undefined, cause => {
         reject(new Error('Ammonite texture failed to load: ' + url, { cause }));
@@ -31,7 +29,7 @@ export async function getAmmoniteDirectionalTextures(): Promise<DirectionalTextu
       // TextureLoader also allocates a texture for a failed image request.
       owned.push(texture);
     }),
-  ));
+  )));
   const failure = results.find(result => result.status === 'rejected');
   if (failure?.status === 'rejected') {
     // Wait for all requests, then release both successful and failed textures.
@@ -44,6 +42,6 @@ export async function getAmmoniteDirectionalTextures(): Promise<DirectionalTextu
 }
 
 export const ammoniteAssets: DirectionalAssetSource = {
-  id: 'ammonite/png/directional-8',
+  id: 'ammonite/png/pitch-directional-8x3',
   load: getAmmoniteDirectionalTextures,
 };

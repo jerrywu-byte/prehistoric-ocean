@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { Creature } from '../src/creatures/Creature';
-import { ammoniteSpecies } from '../src/species/ammonite/ammoniteSpecies';
+import { ammoniteSpecies as productionSpecies } from '../src/species/ammonite/ammoniteSpecies';
 import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
 import { DIRECTIONAL_VIEWS } from '../src/creatures/directional/types';
 import { getTargetPitch, smoothPitch } from '../src/creatures/directional/constrainedPitch';
 
+const ammoniteSpecies = {...productionSpecies, rendering: {...productionSpecies.rendering,
+  mode: 'directional_8' as const, billboard: 'constrainedPitch' as const}};
 const rad = THREE.MathUtils.degToRad;
 const config = ammoniteSpecies.orientation;
 const close = (a:number,b:number) => assert.ok(Math.abs(a-b)<1e-9, `${a} != ${b}`);

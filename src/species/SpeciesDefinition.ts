@@ -1,5 +1,5 @@
 import type { Side } from 'three';
-import type { DirectionalTextureSet } from '../creatures/directional/types';
+import type { CreatureTextureSet } from '../creatures/directional/pitchLayers';
 
 export type Vector3Tuple = readonly [number, number, number];
 export type BehaviorProfile =
@@ -10,7 +10,7 @@ export type BehaviorProfile =
 // The same contract accepts synchronous Canvas or asynchronous image providers.
 export interface DirectionalAssetSource {
   readonly id: string;
-  readonly load: () => DirectionalTextureSet | Promise<DirectionalTextureSet>;
+  readonly load: () => CreatureTextureSet | Promise<CreatureTextureSet>;
 }
 
 export interface CreatureSpeciesDefinition {
@@ -21,8 +21,8 @@ export interface CreatureSpeciesDefinition {
   readonly defaultScale: { readonly width: number; readonly height: number };
   readonly rendering: {
     // Discriminator for future rendering implementations, not implemented here.
-    readonly mode: 'directional_8';
-    readonly billboard: 'cylindrical' | 'constrainedPitch';
+    readonly mode: 'directional_8' | 'pitch_directional_8x3';
+    readonly billboard: 'cylindrical' | 'constrainedPitch' | 'cameraFacing';
     readonly fallbackColor: number;
     readonly transparent: boolean;
     readonly alphaTest: number;
@@ -39,6 +39,8 @@ export interface CreatureSpeciesDefinition {
     readonly billboardPitchDeadZoneDegrees: number;
     readonly billboardPitchResponseSeconds: number;
     readonly billboardHorizontalEpsilon: number;
+    readonly pitchLayerThresholdDegrees: number;
+    readonly pitchLayerHysteresisDegrees: number;
   };
   readonly interaction: {
     readonly interactionDistance: number;

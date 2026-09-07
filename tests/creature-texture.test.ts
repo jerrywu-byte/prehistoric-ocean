@@ -32,6 +32,7 @@ async function check(url: string, success: boolean) {
   camera.position.set(0, 3.2, 10);
   const states: any[] = [];
   const registry = new SpeciesRegistry([{...ammoniteSpecies,
+    rendering: {...ammoniteSpecies.rendering, mode: 'directional_8', billboard: 'cylindrical'},
     directionalAssets: {id: url, load: async () => {
       const texture = await new THREE.TextureLoader().loadAsync(url);
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -50,7 +51,7 @@ async function check(url: string, success: boolean) {
   assert.equal(states.at(-1).count, 1);
   assert.equal(mesh.visible, true);
   assert.deepEqual(mesh.position.toArray(), [0,3.2,2]);
-  assert.deepEqual(mesh.scale.toArray(), [3.2,2,1]);
+  assert.deepEqual(mesh.scale.toArray(), [3.2,3.2,1]);
   assert.equal(mesh.material.transparent, success);
   assert.equal(mesh.material.depthWrite, !success);
   assert.equal(mesh.material.depthTest, true);

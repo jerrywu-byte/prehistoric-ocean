@@ -66,3 +66,36 @@ view selection, heading, textures or world position. No objects are allocated pe
 Debug adds vertical angle, target/applied pitch, pitch limit, dead zone and billboard mode.
 Program tests verify normal direction at every yaw, level/up/down, clamping, dead zone,
 frame-rate independence and pole safety. Windows Chrome must still verify the visual result.
+
+## v0.4.3 pitch-aware assets (current ammonite configuration)
+
+Rendering now supports pitch_directional_8x3 in addition to directional_8.
+The existing directional_8 provider shape and cylindrical/constrainedPitch modes remain supported.
+Ammonite uses cameraFacing and a PitchDirectionalTextureSet:
+top, mid and bottom each contain the same eight shared horizontal keys.
+The provider loads ammonite_{layer}_{direction}.png exactly once per instance.
+All 24 requests must succeed; partial/failing sets are disposed and leave orange fallback.
+Successful sets, including sets delivered after instance disposal, release every texture once.
+
+PitchLayer keys are top/mid/bottom; Debug displays uppercase. getPitchLayer is a pure
+degree-based selector. Initial selection uses ±20°. Subsequent entry from MID requires
+greater than +25° or less than -25°; return requires less than +15° or greater than -15°.
+Equality retains the current layer. Direct TOP/BOTTOM jumps are supported for large position changes.
+pitchLayerThresholdDegrees and pitchLayerHysteresisDegrees are species orientation fields.
+
+Horizontal math/hysteresis is unchanged. Pitch layers use the actual position-derived vertical angle,
+not the damped plane pitch. At the vertical pole, horizontal view/yaw retain their last values
+(default FRONT before any horizontal observation), but the layer still selects TOP/BOTTOM.
+Camera-facing orientation uses position-derived yaw/elevation with YXZ Euler order and zero roll.
+It ignores camera rotation and does not apply the old 30° limit or pitch smoothing.
+ConstrainedPitch and its config/functions/tests remain available for other definitions.
+
+The 24 supplied PNGs are square; ammonite dimensions are now 3.2 × 3.2 (previously 3.2 × 2)
+to preserve aspect ratio. Spawn position, heading, material, proximity and controls are unchanged.
+Map assignment occurs only when the selected texture changes. Update creates no texture,
+material, vector or temporary object. No animation, motion, crossfade or extra species is added.
+
+Debug shows rendering mode, horizontal view, pitch layer, vertical angle, threshold,
+hysteresis, texture key and READY/ERROR/FALLBACK. Limited-pitch fields are hidden for this mode.
+Node tests use image-event adapters; PNG decode/build-copy checks are separate.
+Program validation does not constitute Windows Chrome visual acceptance.

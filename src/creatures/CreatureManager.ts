@@ -36,6 +36,10 @@ export interface CreatureDebugState {
   readonly pitchLimit?: number;
   readonly pitchDeadZone?: number;
   readonly billboardMode?: string;
+  readonly pitchLayer?: string;
+  readonly pitchThreshold?: number;
+  readonly pitchHysteresis?: number;
+  readonly textureKey?: string;
 }
 
 export class CreatureManager {
@@ -125,10 +129,15 @@ export class CreatureManager {
       appliedPitch: THREE.MathUtils.radToDeg(creature.appliedPitch),
       pitchLimit: species.orientation.maxBillboardPitchDegrees,
       pitchDeadZone: species.orientation.billboardPitchDeadZoneDegrees,
-      billboardMode: species.rendering.billboard === 'constrainedPitch' ? 'YAW + LIMITED_PITCH' : 'YAW',
+      billboardMode: species.rendering.billboard === 'cameraFacing' ? 'CAMERA_FACING' : species.rendering.billboard === 'constrainedPitch' ? 'YAW + LIMITED_PITCH' : 'YAW',
       distance: creature.distance,
       observation: creature.distance < species.interaction.minimumObservationDistance ? 'TOO CLOSE' : 'NORMAL',
       textureMode: species.rendering.mode.toUpperCase(),
+      pitchLayer: creature.currentPitchLayer?.toUpperCase(),
+      pitchThreshold: species.orientation.pitchLayerThresholdDegrees,
+      pitchHysteresis: species.orientation.pitchLayerHysteresisDegrees,
+      textureKey: (creature.currentPitchLayer ? creature.currentPitchLayer.toUpperCase() + '_' : '')
+        + DIRECTIONAL_LABELS[creature.view ?? 'front'],
       materialMode: creature.object3d.material.map ? 'TEXTURE' : 'FALLBACK',
     });
   }

@@ -4,9 +4,10 @@ import * as THREE from 'three';
 import { AMMONITE_TEXTURE_URLS, getAmmoniteDirectionalTextures } from '../src/species/ammonite/ammoniteAssets';
 import { CreatureManager } from '../src/creatures/CreatureManager';
 import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
-import { DIRECTIONAL_VIEWS } from '../src/creatures/directional/types';
+
 
 // Controlled image events exercise TextureLoader without claiming real PNG decoding.
+const urls = Object.values(AMMONITE_TEXTURE_URLS).flatMap(layer => Object.values(layer));
 const pending: Array<{url: string; finish: (success: boolean) => void}> = [];
 class ImageAdapter {
   listeners = new Map<string, () => void>();
@@ -26,7 +27,7 @@ THREE.Texture.prototype.dispose = function () {
 };
 try {
   // Each missing direction, full success, and disposal before all requests finish.
-  for (const missing of [null, ...DIRECTIONAL_VIEWS, 'late'] as const) {
+  for (const missing of [null, ...urls, 'late'] as const) {
     pending.length = 0; disposals.clear();
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera();
@@ -35,25 +36,25 @@ try {
     const manager = new CreatureManager(scene, camera, () => {}, state => states.push(state));
     const creature = manager.spawnCreature(AMMONITE_SPAWN);
     const mesh = creature.object3d;
-    assert.equal(pending.length, 8);
-    assert.deepEqual(pending.map(p => p.url), Object.values(AMMONITE_TEXTURE_URLS));
+    assert.equal(pending.length, 24);
+    assert.deepEqual(pending.map(p => p.url), urls);
     assert.equal(states.at(-1).textureStatus, 'LOADING');
     assert.equal(mesh.material.map, null);
-    // All-or-nothing: seven loaded views must not replace the fallback.
-    for (const request of pending.slice(0, 7)) {
-      request.finish(missing === null || missing === 'late' || request.url !== AMMONITE_TEXTURE_URLS[missing]);
+    // All-or-nothing: 23 loaded views must not replace the fallback.
+    for (const request of pending.slice(0, 23)) {
+      request.finish(missing === null || missing === 'late' || request.url !== missing);
     }
     await tick();
     assert.equal(mesh.material.map, null);
     if (missing === 'late') manager.dispose();
-    pending[7].finish(missing === null || missing === 'late' || pending[7].url !== AMMONITE_TEXTURE_URLS[missing]);
+    pending[23].finish(missing === null || missing === 'late' || pending[23].url !== missing);
     await tick();
     if (missing !== 'late') {
       assert.equal(states.at(-1).textureStatus, missing === null ? 'YES' : 'ERROR');
       assert.equal(states.at(-1).materialMode, missing === null ? 'TEXTURE' : 'FALLBACK');
       assert.equal(states.at(-1).speciesId, 'ammonite');
       assert.equal(states.at(-1).creatureName, '菊石 / Ammonite');
-      assert.equal(states.at(-1).textureMode, 'DIRECTIONAL_8');
+      assert.equal(states.at(-1).textureMode, 'PITCH_DIRECTIONAL_8X3');
       assert.equal(mesh.visible, true);
       if (missing === null) {
         assert.equal(mesh.material.map!.colorSpace, THREE.SRGBColorSpace);
@@ -72,11 +73,11 @@ try {
       assert.deepEqual(mesh.position.toArray(), [0,3.2,2]);
       manager.dispose();
     }
-    assert.equal(disposals.size, 8);
+    assert.equal(disposals.size, 24);
     assert.ok([...disposals.values()].every(count => count === 1));
   }
 } finally { THREE.Texture.prototype.dispose = originalDispose; }
-console.log('PASS: atomic eight-PNG provider, each missing direction fallback, debug, materials, disposal and late completion');
+console.log('PASS: atomic 24-PNG provider, each missing direction fallback, debug, materials, disposal and late completion');
 
 
 // Read the supplied files through the real TextureLoader's ImageLoader callbacks.
@@ -94,10 +95,10 @@ class FileImage extends ImageAdapter {
 }
 Object.assign(globalThis, {document: {createElementNS: () => new FileImage()}});
 const actual = await getAmmoniteDirectionalTextures();
-assert.equal(Object.keys(actual).length, 8);
-assert.equal(new Set(Object.values(actual)).size, 8);
-for (const texture of Object.values(actual)) {
+assert.equal(Object.keys(actual).length, 3);
+assert.equal(new Set(Object.values(actual).flatMap(layer => Object.values(layer))).size, 24);
+for (const texture of Object.values(actual).flatMap(layer => Object.values(layer))) {
   assert.equal(texture.colorSpace, THREE.SRGBColorSpace);
   texture.dispose();
 }
-console.log('PASS: eight supplied PNG paths/signatures loaded through TextureLoader file-event adapter');
+console.log('PASS: 24 supplied PNG paths/signatures loaded through TextureLoader file-event adapter');

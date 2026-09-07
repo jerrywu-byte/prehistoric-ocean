@@ -17,7 +17,7 @@ const geometry = new THREE.PlaneGeometry(1, 1);
 const first = new Creature(ammoniteSpecies, {...AMMONITE_SPAWN, headingDegrees: undefined}, geometry);
 const second = new Creature(ammoniteSpecies, {...AMMONITE_SPAWN, id:'second', scaleOverride:[2,3,1], scaleMultiplier:2}, geometry);
 assert.equal(first.species, second.species);
-assert.deepEqual(first.object3d.scale.toArray(), [3.2,2,1]);
+assert.deepEqual(first.object3d.scale.toArray(), [3.2,3.2,1]);
 assert.equal(first.headingRadians, Math.PI/2);
 assert.deepEqual(second.object3d.scale.toArray(), [4,6,2]);
 assert.throws(() => new Creature(ammoniteSpecies, {...AMMONITE_SPAWN, position:[NaN,0,0]}, geometry), /Invalid/);

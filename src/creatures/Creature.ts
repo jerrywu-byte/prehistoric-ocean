@@ -1,16 +1,17 @@
 import * as THREE from 'three';
 import { getTargetPitch, smoothPitch } from './directional/constrainedPitch';
 import type { CreatureSpeciesDefinition } from '../species/SpeciesDefinition';
-import type { DirectionalTextureSet } from './directional/types';
+import { PITCH_LAYERS, getPitchLayer, isPitchTextureSet, type CreatureTextureSet, type PitchLayer } from './directional/pitchLayers';
 import type { CreatureSpawnConfig } from './CreatureSpawnConfig';
 import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle, type DirectionalView } from './directional/getDirectionalView';
 
 export class Creature {
   readonly object3d: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   readonly headingRadians: number;
-  private directionalTextures: DirectionalTextureSet | null = null;
+  private directionalTextures: CreatureTextureSet | null = null;
   private disposed = false;
   currentDirectionalView: DirectionalView | null = null;
+  currentPitchLayer: PitchLayer | null = null;
   previousDirectionalView: DirectionalView | null = null;
   textureStatus: 'LOADING' | 'YES' | 'ERROR' = 'LOADING';
   relativeAngle = 0;
@@ -55,11 +56,15 @@ export class Creature {
       this.textureStatus = 'ERROR';
       onChange();
     };
-    const apply = (textures: DirectionalTextureSet): void => {
+    const apply = (textures: CreatureTextureSet): void => {
       if (this.disposed) { this.disposeTextures(textures); return; }
-      if (!DIRECTIONAL_VIEWS.every(view => textures[view]?.isTexture)) {
+      const layered = this.species.rendering.mode === 'pitch_directional_8x3';
+      const valid = layered
+        ? isPitchTextureSet(textures) && PITCH_LAYERS.every(layer => DIRECTIONAL_VIEWS.every(view => textures[layer]?.[view]?.isTexture))
+        : !isPitchTextureSet(textures) && DIRECTIONAL_VIEWS.every(view => textures[view]?.isTexture);
+      if (!valid) {
         this.disposeTextures(textures);
-        throw new Error('Directional asset set must contain all eight views');
+        throw new Error('Directional asset set is incomplete or does not match rendering mode');
       }
       this.directionalTextures = textures;
       const material = this.object3d.material;
@@ -68,7 +73,7 @@ export class Creature {
       material.transparent = r.transparent;
       material.depthWrite = r.depthWrite;
       material.alphaTest = r.alphaTest;
-      material.map = textures[this.view ?? 'front'];
+      material.map = this.selectedTexture();
       material.needsUpdate = true;
       this.textureStatus = 'YES';
       onChange();
@@ -87,6 +92,10 @@ export class Creature {
     const horizontalDistance = Math.hypot(dx, dz);
     const orientation = this.species.orientation;
     this.verticalAngle = Math.atan2(camera.position.y - this.object3d.position.y, horizontalDistance);
+    if (this.species.rendering.mode === 'pitch_directional_8x3') {
+      this.currentPitchLayer = getPitchLayer(THREE.MathUtils.radToDeg(this.verticalAngle), this.currentPitchLayer,
+        orientation.pitchLayerThresholdDegrees, orientation.pitchLayerHysteresisDegrees);
+    }
     const limited = this.species.rendering.billboard === 'constrainedPitch';
     this.targetPitch = limited
       ? getTargetPitch(this.verticalAngle, horizontalDistance, this.targetPitch, orientation)
@@ -103,12 +112,19 @@ export class Creature {
       if (next !== this.view) {
         this.previousDirectionalView = this.view;
         this.currentDirectionalView = next;
-        if (this.directionalTextures) {
-          this.object3d.material.map = this.directionalTextures[next];
-          this.object3d.material.needsUpdate = true;
-        }
       }
       yaw = Math.atan2(dx, dz);
+    }
+    if (this.currentDirectionalView === null) this.currentDirectionalView = 'front';
+    const selected = this.selectedTexture();
+    if (selected && this.object3d.material.map !== selected) {
+      this.object3d.material.map = selected;
+      this.object3d.material.needsUpdate = true;
+    }
+    // The full camera-facing mode depends only on position, never camera roll.
+    // At the pole retain yaw to keep up stable; elevation still reaches ±90°.
+    if (this.species.rendering.billboard === 'cameraFacing') {
+      this.appliedPitch = this.verticalAngle;
     }
     // RY * RX: pitch around the yawed plane's horizontal axis, never world roll.
     // Plane normal is +Z, so an upward semantic pitch needs a negative Euler X.
@@ -119,8 +135,19 @@ export class Creature {
     return this.object3d.position.distanceToSquared(position);
   }
 
-  private disposeTextures(textures: DirectionalTextureSet): void {
-    for (const texture of new Set(Object.values(textures))) texture?.dispose();
+  private selectedTexture(): THREE.Texture | null {
+    const set = this.directionalTextures;
+    if (!set) return null;
+    return isPitchTextureSet(set)
+      ? set[this.currentPitchLayer ?? 'mid'][this.view ?? 'front']
+      : set[this.view ?? 'front'];
+  }
+
+  private disposeTextures(textures: CreatureTextureSet): void {
+    const values = isPitchTextureSet(textures)
+      ? Object.values(textures).flatMap(layer => Object.values(layer))
+      : Object.values(textures);
+    for (const texture of new Set(values)) texture?.dispose();
   }
 
   dispose(): void {

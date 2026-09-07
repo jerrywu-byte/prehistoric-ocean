@@ -57,7 +57,7 @@ export function createPointerLockDebug(): PointerLockDebug {
   creaturePositionX.textContent = 'X: 0.00';
   creaturePositionY.textContent = 'Y: 0.00';
   creaturePositionZ.textContent = 'Z: 0.00';
-  textureLoaded.textContent = 'Texture: LOADING';
+  textureLoaded.textContent = 'Texture Status: FALLBACK';
   textureUrl.textContent = 'Texture URL: —';
   materialMode.textContent = 'Material Mode: FALLBACK';
 
@@ -83,7 +83,7 @@ export function createPointerLockDebug(): PointerLockDebug {
       directionInfo.textContent = [
         `Species ID: ${state.speciesId ?? '—'}`,
         `Creature Name: ${state.creatureName ?? '—'}`,
-        `Creature View: ${state.view ?? '—'}`,
+        `Horizontal View: ${state.view ?? '—'}`,
         `Previous View: ${state.previousView ?? '—'}`,
         `Direction Index: ${state.directionIndex ?? '—'}`,
         `Hysteresis: ${state.hysteresisDegrees ?? '—'}°`,
@@ -91,20 +91,27 @@ export function createPointerLockDebug(): PointerLockDebug {
         `Creature Heading: ${(state.heading ?? 0).toFixed(1)}°`,
         `Distance: ${(state.distance ?? 0).toFixed(2)}`,
         `Observation: ${state.observation ?? 'NORMAL'}`,
-        `Texture Mode: ${state.textureMode ?? '—'}`,
+        `Rendering Mode: ${state.textureMode ?? '—'}`,
         `Vertical Angle: ${(state.verticalAngle ?? 0).toFixed(1)}°`,
-        `Target Pitch: ${(state.targetPitch ?? 0).toFixed(1)}°`,
-        `Applied Pitch: ${(state.appliedPitch ?? 0).toFixed(1)}°`,
-        `Pitch Limit: ${state.pitchLimit ?? '—'}°`,
-        `Pitch Dead Zone: ${state.pitchDeadZone ?? '—'}°`,
-        `Billboard Mode: ${state.billboardMode ?? '—'}`,
+        ...(state.textureMode === 'PITCH_DIRECTIONAL_8X3' ? [
+          `Pitch Layer: ${state.pitchLayer ?? '—'}`,
+          `Pitch Threshold: ${state.pitchThreshold ?? '—'}°`,
+          `Pitch Hysteresis: ${state.pitchHysteresis ?? '—'}°`,
+          `Texture Key: ${state.textureKey ?? '—'}`,
+        ] : [
+          `Target Pitch: ${(state.targetPitch ?? 0).toFixed(1)}°`,
+          `Applied Pitch: ${(state.appliedPitch ?? 0).toFixed(1)}°`,
+          `Pitch Limit: ${state.pitchLimit ?? '—'}°`,
+          `Pitch Dead Zone: ${state.pitchDeadZone ?? '—'}°`,
+          `Billboard Mode: ${state.billboardMode ?? '—'}`,
+        ]),
       ].join('\n');
       creatureCount.textContent = `Creature Count: ${state.count}`;
       creatureVisible.textContent = `Creature Visible: ${state.visible ? 'YES' : 'NO'}`;
       creaturePositionX.textContent = `X: ${state.x.toFixed(2)}`;
       creaturePositionY.textContent = `Y: ${state.y.toFixed(2)}`;
       creaturePositionZ.textContent = `Z: ${state.z.toFixed(2)}`;
-      textureLoaded.textContent = `Texture: ${state.textureStatus}`;
+      textureLoaded.textContent = `Texture Status: ${state.textureStatus === 'YES' ? 'READY' : state.textureStatus === 'ERROR' ? 'ERROR' : 'FALLBACK'}`;
       textureUrl.textContent = `Texture URL: ${state.textureUrl}`;
       materialMode.textContent = `Material Mode: ${state.materialMode}`;
     },

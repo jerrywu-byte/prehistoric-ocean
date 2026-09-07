@@ -31,6 +31,9 @@ assert.equal(getRelativeAngle(0,8,Math.PI/2),0);
 
 // Image event adapter tests the real TextureLoader and lifecycle/math, not PNG pixels.
 let images = 0;
+let disposedTextures = 0;
+const originalDispose = THREE.Texture.prototype.dispose;
+THREE.Texture.prototype.dispose = function () { disposedTextures++; originalDispose.call(this); };
 class TestImage {
   private listeners = new Map<string, () => void>();
   addEventListener(type: string, fn: () => void) { this.listeners.set(type, fn); }
@@ -51,7 +54,7 @@ const manager = new CreatureManager(scene, camera,
 manager.spawnCreature(AMMONITE_SPAWN);
 await new Promise(resolve => setTimeout(resolve, 0));
 const mesh = scene.children[0] as THREE.Mesh<THREE.PlaneGeometry,THREE.MeshBasicMaterial>;
-assert.equal(images, 8);
+assert.equal(images, 24);
 assert.equal(states.at(-1).view, 'FRONT');
 assert.equal(states.at(-1).creatureName, '菊石 / Ammonite');
 assert.equal(mesh.material.fog, true);
@@ -67,7 +70,7 @@ for (let i=0; i<=8; i++) {
   manager.update(.1);
   assert.equal(states.at(-1).view, DIRECTIONAL_LABELS[view]);
   assert.equal(states.at(-1).directionIndex, i%8);
-  assert.equal(states.at(-1).textureMode, 'DIRECTIONAL_8');
+  assert.equal(states.at(-1).textureMode, 'PITCH_DIRECTIONAL_8X3');
   assert.equal(mesh.rotation.x,0);
   assert.equal(mesh.rotation.z,0);
   const normal = new THREE.Vector3(0,0,1).applyQuaternion(mesh.quaternion);
@@ -81,7 +84,7 @@ const originalVersion = mesh.material.version;
 for(let i=0;i<120;i++) manager.update(1/60);
 assert.equal(mesh.material.map,originalMap);
 assert.equal(mesh.material.version, originalVersion);
-assert.equal(images,8);
+assert.equal(images,24);
 camera.position.set(0,3.2,4);
 manager.update(.1);
 assert.equal(states.at(-1).distance,2);
@@ -98,5 +101,7 @@ let disposed = 0;
 for(const map of maps) (map as THREE.Texture).addEventListener('dispose',()=>disposed++);
 manager.dispose();
 assert.equal(disposed,8);
+assert.equal(disposedTextures,24);
+THREE.Texture.prototype.dispose = originalDispose;
 assert.equal(scene.children.length,0);
 console.log('PASS: eight views, orbit, hysteresis, upright plane, textures reused/disposed, distance/proximity/fog');
