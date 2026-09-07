@@ -29,12 +29,17 @@ assert.equal(getDirectionalView(rad(-179),'back',h),'back');
 assert.equal(getDirectionalView(rad(179),'back',h),'back');
 assert.equal(getRelativeAngle(0,8,Math.PI/2),0);
 
-// Canvas drawing adapter tests lifecycle/math/materials, not raster appearance.
-let canvases = 0;
-const context = new Proxy({}, {get: () => () => {}, set: () => true});
-Object.assign(globalThis, {document: {createElement: () => {
-  canvases++;
-  return {width:0,height:0,getContext: () => context};
+// Image event adapter tests the real TextureLoader and lifecycle/math, not PNG pixels.
+let images = 0;
+class TestImage {
+  private listeners = new Map<string, () => void>();
+  addEventListener(type: string, fn: () => void) { this.listeners.set(type, fn); }
+  removeEventListener(type: string) { this.listeners.delete(type); }
+  set src(_url: string) { queueMicrotask(() => this.listeners.get('load')?.call(this)); }
+}
+Object.assign(globalThis, {document: {createElementNS: () => {
+  images++;
+  return new TestImage();
 }}});
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera();
@@ -44,8 +49,9 @@ const proximity: any[] = [];
 const manager = new CreatureManager(scene, camera,
   s=>proximity.push(s), s=>states.push(s));
 manager.spawnCreature(AMMONITE_SPAWN);
+await new Promise(resolve => setTimeout(resolve, 0));
 const mesh = scene.children[0] as THREE.Mesh<THREE.PlaneGeometry,THREE.MeshBasicMaterial>;
-assert.equal(canvases, 8);
+assert.equal(images, 8);
 assert.equal(states.at(-1).view, 'FRONT');
 assert.equal(states.at(-1).creatureName, '菊石 / Ammonite');
 assert.equal(mesh.material.fog, true);
@@ -75,7 +81,7 @@ const originalVersion = mesh.material.version;
 for(let i=0;i<120;i++) manager.update(1/60);
 assert.equal(mesh.material.map,originalMap);
 assert.equal(mesh.material.version, originalVersion);
-assert.equal(canvases,8);
+assert.equal(images,8);
 camera.position.set(0,3.2,4);
 manager.update(.1);
 assert.equal(states.at(-1).distance,2);

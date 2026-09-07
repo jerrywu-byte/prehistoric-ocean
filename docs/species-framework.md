@@ -5,7 +5,7 @@ Creature holds the registry's shared, readonly definition reference, never a cop
 
 - `src/species/SpeciesDefinition.ts`: names, scientific name, rendering discriminator,
   asset provider, default dimensions, orientation, interaction, capability metadata and behavior profile.
-- `src/species/ammonite/`: ammonite definition, standard asset provider and existing Canvas drawing.
+- `src/species/ammonite/`: ammonite definition, standard asset provider and PNG loader (with the previous Canvas drawing retained but inactive).
 - `src/species/speciesRegistry.ts`: register definitions once; lookup rejects unknown IDs and duplicates.
 - `src/creatures/CreatureSpawnConfig.ts`: instance ID, species ID, position, optional heading,
   scale override and multiplier. Reserved instance state has no behavior implementation.
@@ -22,7 +22,7 @@ Creature reuses maps until direction changes and disposes every unique texture o
 assets that finish loading after disposal. Manager owns the shared plane geometry.
 Loading or failure keeps an orange fallback; provider errors are logged and exposed in Debug.
 
-Ammonite uses the unchanged eight Canvas drawings, 3.2 × 2 dimensions, heading 90° (+Z),
+Ammonite uses eight PNG assets under public/assets/creatures/ammonite/, 3.2 × 2 dimensions, heading 90° (+Z),
 5° hysteresis, interaction distance 6 and minimum observation distance 2.25.
 Movement/animation remain disabled, one frame per direction; gentle_drifter is metadata only.
 Position belongs to the spawn, not the species. An omitted heading uses the species default.
@@ -32,3 +32,14 @@ No AI, movement or animation runners are implemented.
 Tests cover direction order and boundaries, materials, proximity, registry and shared definitions,
 instance transforms, synchronous/asynchronous fallback, and asset disposal.
 These program tests do not replace Windows Chrome visual/control acceptance.
+
+
+## v0.4.1 PNG integration
+
+Ammonite's provider uses TextureLoader with an explicit mapping of all eight standard
+direction keys to ammonite_*.png. Relative URLs support the existing Vite base './'.
+Only a complete successful set is returned. Any failed request rejects the provider
+after every request settles and disposes all allocated textures; Creature keeps fallback.
+The extra candidate image is not part of the mapping.
+SRGB is applied on load. Species material settings, core Creature, registry, direction
+selection, hysteresis, spawn and diver controls are unchanged.
