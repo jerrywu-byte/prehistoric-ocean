@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createDirectionalTestTextures, type DirectionalTextures } from './directional/createDirectionalTestTextures';
-import { getDirectionalView, getRelativeAngle, type DirectionalView } from './directional/getDirectionalView';
+import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle, type DirectionalView } from './directional/getDirectionalView';
 import type { CreatureConfig } from './creatureConfig';
 import { getSeabedHeightAt, WORLD_LIMITS } from '../world/worldLimits';
 
@@ -23,7 +23,12 @@ export class Creature {
   private elapsedSeconds = 0;
   private heading = 0;
   private directionalTextures: DirectionalTextures | null = null;
-  view: DirectionalView | null = null;
+  currentDirectionalView: DirectionalView | null = null;
+  previousDirectionalView: DirectionalView | null = null;
+  get view(): DirectionalView | null { return this.currentDirectionalView; }
+  get directionIndex(): number {
+    return this.currentDirectionalView === null ? -1 : DIRECTIONAL_VIEWS.indexOf(this.currentDirectionalView);
+  }
   relativeAngle = 0;
   distance = 0;
   get headingRadians(): number { return this.heading; }
@@ -136,10 +141,14 @@ export class Creature {
       // Directly above/below: keep last yaw and view instead of unstable atan2.
       if (dx * dx + dz * dz < 1e-8) return;
       this.relativeAngle = getRelativeAngle(dx, dz, this.heading);
-      const nextView = getDirectionalView(this.relativeAngle, this.view, this.config.directionHysteresis);
+      const nextView = getDirectionalView(this.relativeAngle, this.view, THREE.MathUtils.degToRad(this.config.directionHysteresisDegrees));
       if (nextView !== this.view) {
-        this.view = nextView;
-        if (this.directionalTextures) this.object3d.material.map = this.directionalTextures[nextView];
+        this.previousDirectionalView = this.currentDirectionalView;
+        this.currentDirectionalView = nextView;
+        if (this.directionalTextures) {
+          this.object3d.material.map = this.directionalTextures[nextView];
+          this.object3d.material.needsUpdate = true;
+        }
       }
       this.object3d.rotation.set(0, Math.atan2(dx, dz), 0);
     } else if (this.config.facingMode === 'billboard') {

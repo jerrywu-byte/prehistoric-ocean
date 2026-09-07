@@ -82,6 +82,9 @@ export function createPointerLockDebug(): PointerLockDebug {
     setCreatureState(state: CreatureDebugState): void {
       directionInfo.textContent = [
         `Creature View: ${state.view ?? '—'}`,
+        `Previous View: ${state.previousView ?? '—'}`,
+        `Direction Index: ${state.directionIndex ?? '—'}`,
+        `Hysteresis: ${state.hysteresisDegrees ?? '—'}°`,
         `Relative Angle: ${(state.relativeAngle ?? 0).toFixed(1)}°`,
         `Creature Heading: ${(state.heading ?? 0).toFixed(1)}°`,
         `Distance: ${(state.distance ?? 0).toFixed(2)}`,

@@ -12,7 +12,7 @@ export interface CreatureConfig {
   readonly facingMode: CreatureFacingMode;
   readonly isStatic: boolean;
   readonly initialHeading: number;
-  readonly directionHysteresis: number;
+  readonly directionHysteresisDegrees: number;
   readonly minimumObservationDistance: number;
   readonly fixedPosition: readonly [number, number, number];
   readonly width: number;
@@ -45,7 +45,7 @@ export const PROTOTYPE_CREATURE: CreatureConfig = {
   facingMode: 'directional-impostor',
   isStatic: true,
   initialHeading: Math.PI / 2, // +Z; starts facing the spawn camera
-  directionHysteresis: 8 * Math.PI / 180,
+  directionHysteresisDegrees: 5,
   minimumObservationDistance: 2.25,
   fixedPosition: [0, 3.2, 2],
   width: 3.2,

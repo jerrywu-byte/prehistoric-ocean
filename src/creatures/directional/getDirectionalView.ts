@@ -1,4 +1,4 @@
-export const DIRECTIONAL_VIEWS = ['FRONT', 'RIGHT', 'BACK', 'LEFT'] as const;
+export const DIRECTIONAL_VIEWS = ['FRONT', 'FRONT_RIGHT', 'RIGHT', 'BACK_RIGHT', 'BACK', 'BACK_LEFT', 'LEFT', 'FRONT_LEFT'] as const;
 export type DirectionalView = typeof DIRECTIONAL_VIEWS[number];
 const TAU = Math.PI * 2;
 
