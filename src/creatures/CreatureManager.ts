@@ -30,6 +30,12 @@ export interface CreatureDebugState {
   readonly distance?: number;
   readonly observation?: 'NORMAL' | 'TOO CLOSE';
   readonly textureMode?: string;
+  readonly verticalAngle?: number;
+  readonly targetPitch?: number;
+  readonly appliedPitch?: number;
+  readonly pitchLimit?: number;
+  readonly pitchDeadZone?: number;
+  readonly billboardMode?: string;
 }
 
 export class CreatureManager {
@@ -114,6 +120,12 @@ export class CreatureManager {
       hysteresisDegrees: species.orientation.directionalHysteresisDegrees,
       relativeAngle: creature.relativeAngle * 180 / Math.PI,
       heading: creature.headingRadians * 180 / Math.PI,
+      verticalAngle: THREE.MathUtils.radToDeg(creature.verticalAngle),
+      targetPitch: THREE.MathUtils.radToDeg(creature.targetPitch),
+      appliedPitch: THREE.MathUtils.radToDeg(creature.appliedPitch),
+      pitchLimit: species.orientation.maxBillboardPitchDegrees,
+      pitchDeadZone: species.orientation.billboardPitchDeadZoneDegrees,
+      billboardMode: species.rendering.billboard === 'constrainedPitch' ? 'YAW + LIMITED_PITCH' : 'YAW',
       distance: creature.distance,
       observation: creature.distance < species.interaction.minimumObservationDistance ? 'TOO CLOSE' : 'NORMAL',
       textureMode: species.rendering.mode.toUpperCase(),

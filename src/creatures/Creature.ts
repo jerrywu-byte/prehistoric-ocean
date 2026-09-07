@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getTargetPitch, smoothPitch } from './directional/constrainedPitch';
 import type { CreatureSpeciesDefinition } from '../species/SpeciesDefinition';
 import type { DirectionalTextureSet } from './directional/types';
 import type { CreatureSpawnConfig } from './CreatureSpawnConfig';
@@ -14,6 +15,9 @@ export class Creature {
   textureStatus: 'LOADING' | 'YES' | 'ERROR' = 'LOADING';
   relativeAngle = 0;
   distance = 0;
+  verticalAngle = 0;
+  targetPitch = 0;
+  appliedPitch = 0;
   get view(): DirectionalView | null { return this.currentDirectionalView; }
   get directionIndex(): number {
     return this.view === null ? -1 : DIRECTIONAL_VIEWS.indexOf(this.view);
@@ -76,23 +80,39 @@ export class Creature {
     } catch (error) { fail(error); }
   }
 
-  update(_deltaSeconds: number, camera: THREE.Camera): void {
+  update(deltaSeconds: number, camera: THREE.Camera): void {
     const dx = camera.position.x - this.object3d.position.x;
     const dz = camera.position.z - this.object3d.position.z;
     this.distance = camera.position.distanceTo(this.object3d.position);
-    if (dx * dx + dz * dz < 1e-8) return;
-    this.relativeAngle = getRelativeAngle(dx, dz, this.headingRadians);
-    const next = getDirectionalView(this.relativeAngle, this.view,
-      THREE.MathUtils.degToRad(this.species.orientation.directionalHysteresisDegrees));
-    if (next !== this.view) {
-      this.previousDirectionalView = this.view;
-      this.currentDirectionalView = next;
-      if (this.directionalTextures) {
-        this.object3d.material.map = this.directionalTextures[next];
-        this.object3d.material.needsUpdate = true;
+    const horizontalDistance = Math.hypot(dx, dz);
+    const orientation = this.species.orientation;
+    this.verticalAngle = Math.atan2(camera.position.y - this.object3d.position.y, horizontalDistance);
+    const limited = this.species.rendering.billboard === 'constrainedPitch';
+    this.targetPitch = limited
+      ? getTargetPitch(this.verticalAngle, horizontalDistance, this.targetPitch, orientation)
+      : 0;
+    this.appliedPitch = limited
+      ? smoothPitch(this.appliedPitch, this.targetPitch, deltaSeconds, orientation.billboardPitchResponseSeconds)
+      : 0;
+    // Preserve yaw and directional view at the vertical pole; pitch still updates smoothly.
+    let yaw = this.object3d.rotation.y;
+    if (horizontalDistance >= orientation.billboardHorizontalEpsilon) {
+      this.relativeAngle = getRelativeAngle(dx, dz, this.headingRadians);
+      const next = getDirectionalView(this.relativeAngle, this.view,
+        THREE.MathUtils.degToRad(this.species.orientation.directionalHysteresisDegrees));
+      if (next !== this.view) {
+        this.previousDirectionalView = this.view;
+        this.currentDirectionalView = next;
+        if (this.directionalTextures) {
+          this.object3d.material.map = this.directionalTextures[next];
+          this.object3d.material.needsUpdate = true;
+        }
       }
+      yaw = Math.atan2(dx, dz);
     }
-    this.object3d.rotation.set(0, Math.atan2(dx, dz), 0);
+    // RY * RX: pitch around the yawed plane's horizontal axis, never world roll.
+    // Plane normal is +Z, so an upward semantic pitch needs a negative Euler X.
+    this.object3d.rotation.set(this.appliedPitch === 0 ? 0 : -this.appliedPitch, yaw, 0, 'YXZ');
   }
 
   distanceSquaredTo(position: THREE.Vector3): number {

@@ -92,6 +92,12 @@ export function createPointerLockDebug(): PointerLockDebug {
         `Distance: ${(state.distance ?? 0).toFixed(2)}`,
         `Observation: ${state.observation ?? 'NORMAL'}`,
         `Texture Mode: ${state.textureMode ?? '—'}`,
+        `Vertical Angle: ${(state.verticalAngle ?? 0).toFixed(1)}°`,
+        `Target Pitch: ${(state.targetPitch ?? 0).toFixed(1)}°`,
+        `Applied Pitch: ${(state.appliedPitch ?? 0).toFixed(1)}°`,
+        `Pitch Limit: ${state.pitchLimit ?? '—'}°`,
+        `Pitch Dead Zone: ${state.pitchDeadZone ?? '—'}°`,
+        `Billboard Mode: ${state.billboardMode ?? '—'}`,
       ].join('\n');
       creatureCount.textContent = `Creature Count: ${state.count}`;
       creatureVisible.textContent = `Creature Visible: ${state.visible ? 'YES' : 'NO'}`;

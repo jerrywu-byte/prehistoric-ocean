@@ -22,7 +22,7 @@ export interface CreatureSpeciesDefinition {
   readonly rendering: {
     // Discriminator for future rendering implementations, not implemented here.
     readonly mode: 'directional_8';
-    readonly billboard: 'cylindrical';
+    readonly billboard: 'cylindrical' | 'constrainedPitch';
     readonly fallbackColor: number;
     readonly transparent: boolean;
     readonly alphaTest: number;
@@ -35,6 +35,10 @@ export interface CreatureSpeciesDefinition {
   readonly orientation: {
     readonly defaultHeadingDegrees: number;
     readonly directionalHysteresisDegrees: number;
+    readonly maxBillboardPitchDegrees: number;
+    readonly billboardPitchDeadZoneDegrees: number;
+    readonly billboardPitchResponseSeconds: number;
+    readonly billboardHorizontalEpsilon: number;
   };
   readonly interaction: {
     readonly interactionDistance: number;

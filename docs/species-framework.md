@@ -43,3 +43,26 @@ after every request settles and disposes all allocated textures; Creature keeps 
 The extra candidate image is not part of the mapping.
 SRGB is applied on load. Species material settings, core Creature, registry, direction
 selection, hysteresis, spawn and diver controls are unchanged.
+
+## v0.4.2 constrained pitch
+
+Ammonite rendering.billboard is constrainedPitch; cylindrical remains available.
+Orientation adds maxBillboardPitchDegrees (30), billboardPitchDeadZoneDegrees (3),
+billboardPitchResponseSeconds (0.18, time to 95% response) and
+billboardHorizontalEpsilon (0.01 world units).
+
+Creature computes atan2(camera.y - creature.y, hypot(dx,dz)) from positions only.
+Pitch inside the dead zone targets zero; outside it targets the angle clamped to ±30°.
+Exponential damping is frame-rate independent and does not overshoot.
+At the vertical pole (horizontal distance below epsilon), target pitch, yaw and
+directional view retain their preceding values; current pitch continues smoothing.
+TOO CLOSE still uses the original full 3D distance and 2.25 threshold.
+
+Orientation uses Euler YXZ (RY × RX), with zero Z rotation. Positive semantic pitch
+means upward; Euler X is negative to tilt the +Z plane normal upward. Pitch acts around
+the yawed local horizontal axis. It does not copy camera rotation or change horizontal
+view selection, heading, textures or world position. No objects are allocated per update.
+
+Debug adds vertical angle, target/applied pitch, pitch limit, dead zone and billboard mode.
+Program tests verify normal direction at every yaw, level/up/down, clamping, dead zone,
+frame-rate independence and pole safety. Windows Chrome must still verify the visual result.
