@@ -1,4 +1,4 @@
-export type CreatureFacingMode = 'billboard' | 'directional';
+export type CreatureFacingMode = 'billboard' | 'directional' | 'directional-impostor';
 
 export interface CreatureConfig {
   readonly id: string;
@@ -11,6 +11,9 @@ export interface CreatureConfig {
   readonly materialFog: boolean;
   readonly facingMode: CreatureFacingMode;
   readonly isStatic: boolean;
+  readonly initialHeading: number;
+  readonly directionHysteresis: number;
+  readonly minimumObservationDistance: number;
   readonly fixedPosition: readonly [number, number, number];
   readonly width: number;
   readonly height: number;
@@ -38,9 +41,12 @@ export const PROTOTYPE_CREATURE: CreatureConfig = {
   useTexture: true,
   textureAlphaTest: 0.05,
   materialColor: 0xffa500,
-  materialFog: false,
-  facingMode: 'billboard',
+  materialFog: true,
+  facingMode: 'directional-impostor',
   isStatic: true,
+  initialHeading: Math.PI / 2, // +Z; starts facing the spawn camera
+  directionHysteresis: 8 * Math.PI / 180,
+  minimumObservationDistance: 2.25,
   fixedPosition: [0, 3.2, 2],
   width: 3.2,
   height: 2,

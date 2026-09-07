@@ -17,6 +17,12 @@ export interface CreatureDebugState {
   readonly textureStatus: 'LOADING' | 'YES' | 'ERROR' | 'NO';
   readonly textureUrl: string;
   readonly materialMode: 'FALLBACK' | 'TEXTURE';
+  readonly view?: string;
+  readonly relativeAngle?: number;
+  readonly heading?: number;
+  readonly distance?: number;
+  readonly observation?: 'NORMAL' | 'TOO CLOSE';
+  readonly textureMode?: string;
 }
 
 export class CreatureManager {
@@ -27,6 +33,7 @@ export class CreatureManager {
   private wasNearby = false;
   private textureStatus: CreatureDebugState['textureStatus'] = 'NO';
   private disposed = false;
+  private debugElapsed = 0;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -50,7 +57,16 @@ export class CreatureManager {
     this.addPrototypeCreature();
     this.textureStatus = config.useTexture ? 'LOADING' : 'NO';
     this.reportDebugState();
-    if (config.useTexture) this.loadTexture();
+    if (config.facingMode === 'directional-impostor') {
+      try {
+        this.creatures[0].initializeDirectionalTextures();
+        this.creatures[0].update(0, this.camera);
+        this.textureStatus = 'YES';
+        this.reportDebugState();
+      } catch (error) {
+        this.handleTextureError(error);
+      }
+    } else if (config.useTexture) this.loadTexture();
   }
 
   // The creature and its opaque fallback exist before any asynchronous request.
@@ -105,6 +121,12 @@ export class CreatureManager {
       return;
     }
 
+    this.debugElapsed += deltaSeconds;
+    if (this.debugElapsed >= 0.1) {
+      this.debugElapsed = 0;
+      this.reportDebugState();
+    }
+
     const isNearby = prototype.distanceSquaredTo(this.camera.position) <=
       this.config.interactionDistance ** 2;
 
@@ -122,6 +144,7 @@ export class CreatureManager {
     this.disposed = true;
     for (const creature of this.creatures) {
       this.scene.remove(creature.object3d);
+      creature.dispose();
     }
 
     this.creatures.length = 0;
@@ -135,7 +158,7 @@ export class CreatureManager {
     creature.object3d.visible = true;
     creature.setInitialPosition(
       new THREE.Vector3(...this.config.fixedPosition),
-      0,
+      this.config.initialHeading,
     );
     this.creatures.push(creature);
     this.scene.add(creature.object3d);
@@ -151,7 +174,13 @@ export class CreatureManager {
       y: prototype?.object3d.position.y ?? 0,
       z: prototype?.object3d.position.z ?? 0,
       textureStatus: this.textureStatus,
-      textureUrl: this.config.textureUrl,
+      textureUrl: this.config.facingMode === 'directional-impostor' ? 'CanvasTexture (generated)' : this.config.textureUrl,
+      view: prototype?.view ?? '—',
+      relativeAngle: (prototype?.relativeAngle ?? 0) * 180 / Math.PI,
+      heading: (prototype?.headingRadians ?? 0) * 180 / Math.PI,
+      distance: prototype?.distance ?? 0,
+      observation: prototype && prototype.distance < this.config.minimumObservationDistance ? 'TOO CLOSE' : 'NORMAL',
+      textureMode: this.config.facingMode === 'directional-impostor' ? 'DIRECTIONAL_4' : 'SINGLE',
       materialMode: this.material.map ? 'TEXTURE' : 'FALLBACK',
     });
   }

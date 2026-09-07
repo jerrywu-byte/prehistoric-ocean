@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { createDirectionalTestTextures, type DirectionalTextures } from './directional/createDirectionalTestTextures';
+import { getDirectionalView, getRelativeAngle, type DirectionalView } from './directional/getDirectionalView';
 import type { CreatureConfig } from './creatureConfig';
 import { getSeabedHeightAt, WORLD_LIMITS } from '../world/worldLimits';
 
@@ -20,6 +22,29 @@ export class Creature {
   private readonly swimDirection = new THREE.Vector3();
   private elapsedSeconds = 0;
   private heading = 0;
+  private directionalTextures: DirectionalTextures | null = null;
+  view: DirectionalView | null = null;
+  relativeAngle = 0;
+  distance = 0;
+  get headingRadians(): number { return this.heading; }
+
+  initializeDirectionalTextures(): void {
+    this.directionalTextures = createDirectionalTestTextures();
+    const material = this.object3d.material;
+    material.color.set(0xffffff);
+    material.transparent = true;
+    material.depthWrite = false;
+    material.alphaTest = this.config.textureAlphaTest;
+    material.map = this.directionalTextures.FRONT;
+    material.needsUpdate = true;
+  }
+
+  dispose(): void {
+    if (this.directionalTextures) {
+      for (const texture of Object.values(this.directionalTextures)) texture.dispose();
+      this.directionalTextures = null;
+    }
+  }
   private baseHeading = 0;
   private swimCenterY = 0;
 
@@ -104,7 +129,20 @@ export class Creature {
   }
 
   private updateFacing(camera: THREE.Camera): void {
-    if (this.config.facingMode === 'billboard') {
+    const dx = camera.position.x - this.object3d.position.x;
+    const dz = camera.position.z - this.object3d.position.z;
+    this.distance = camera.position.distanceTo(this.object3d.position);
+    if (this.config.facingMode === 'directional-impostor') {
+      // Directly above/below: keep last yaw and view instead of unstable atan2.
+      if (dx * dx + dz * dz < 1e-8) return;
+      this.relativeAngle = getRelativeAngle(dx, dz, this.heading);
+      const nextView = getDirectionalView(this.relativeAngle, this.view, this.config.directionHysteresis);
+      if (nextView !== this.view) {
+        this.view = nextView;
+        if (this.directionalTextures) this.object3d.material.map = this.directionalTextures[nextView];
+      }
+      this.object3d.rotation.set(0, Math.atan2(dx, dz), 0);
+    } else if (this.config.facingMode === 'billboard') {
       this.object3d.quaternion.copy(camera.quaternion);
     } else {
       this.object3d.rotation.set(0, -this.heading, 0);

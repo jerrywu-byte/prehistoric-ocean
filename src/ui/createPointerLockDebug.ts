@@ -26,7 +26,10 @@ export function createPointerLockDebug(): PointerLockDebug {
   const textureLoaded = document.createElement('span');
   const textureUrl = document.createElement('span');
   const materialMode = document.createElement('span');
+  const directionInfo = document.createElement('span');
+  directionInfo.style.whiteSpace = 'pre-line';
   debug.append(
+    directionInfo,
     pointerLock,
     canvasClick,
     error,
@@ -77,6 +80,14 @@ export function createPointerLockDebug(): PointerLockDebug {
       }
     },
     setCreatureState(state: CreatureDebugState): void {
+      directionInfo.textContent = [
+        `Creature View: ${state.view ?? '—'}`,
+        `Relative Angle: ${(state.relativeAngle ?? 0).toFixed(1)}°`,
+        `Creature Heading: ${(state.heading ?? 0).toFixed(1)}°`,
+        `Distance: ${(state.distance ?? 0).toFixed(2)}`,
+        `Observation: ${state.observation ?? 'NORMAL'}`,
+        `Texture Mode: ${state.textureMode ?? '—'}`,
+      ].join('\n');
       creatureCount.textContent = `Creature Count: ${state.count}`;
       creatureVisible.textContent = `Creature Visible: ${state.visible ? 'YES' : 'NO'}`;
       creaturePositionX.textContent = `X: ${state.x.toFixed(2)}`;

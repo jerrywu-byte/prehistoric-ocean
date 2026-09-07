@@ -28,7 +28,7 @@ async function check(url: string, success: boolean) {
   const camera = new THREE.PerspectiveCamera(65, 1, .1, 500);
   camera.position.set(0, 3.2, 10);
   const states: any[] = [];
-  const manager = new CreatureManager(scene, camera, {...PROTOTYPE_CREATURE, textureUrl: url},
+  const manager = new CreatureManager(scene, camera, {...PROTOTYPE_CREATURE, facingMode: 'billboard', materialFog: false, textureUrl: url},
     () => {}, state => states.push(state));
   const mesh = scene.children[0] as THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   assert.equal(states.at(-1).textureStatus, 'LOADING');
