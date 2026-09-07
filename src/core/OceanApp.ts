@@ -117,7 +117,9 @@ export class OceanApp {
       x: 0,
       y: 0,
       z: 0,
-      textureLoaded: false,
+      textureStatus: 'ERROR',
+      textureUrl: PROTOTYPE_CREATURE.textureUrl,
+      materialMode: 'FALLBACK',
     });
   }
 

@@ -14,16 +14,19 @@ export interface CreatureDebugState {
   readonly x: number;
   readonly y: number;
   readonly z: number;
-  readonly textureLoaded: boolean;
+  readonly textureStatus: 'LOADING' | 'YES' | 'ERROR' | 'NO';
+  readonly textureUrl: string;
+  readonly materialMode: 'FALLBACK' | 'TEXTURE';
 }
 
 export class CreatureManager {
   private readonly creatures: Creature[] = [];
   private readonly geometry = new THREE.PlaneGeometry(1, 1);
-  private readonly texture: THREE.Texture | null;
+  private texture: THREE.Texture | null = null;
   private readonly material: THREE.MeshBasicMaterial;
   private wasNearby = false;
-  private textureLoaded = false;
+  private textureStatus: CreatureDebugState['textureStatus'] = 'NO';
+  private disposed = false;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -32,26 +35,9 @@ export class CreatureManager {
     private readonly onProximityChange: (state: CreatureProximityState) => void,
     private readonly onDebugChange: (state: CreatureDebugState) => void,
   ) {
-    this.texture = config.useTexture
-      ? new THREE.TextureLoader().load(
-        config.textureUrl,
-        (texture) => {
-          texture.colorSpace = THREE.SRGBColorSpace;
-          this.textureLoaded = true;
-          this.reportDebugState();
-        },
-        undefined,
-        (error) => {
-          console.error('[CreatureManager] texture failed to load:', error);
-          this.textureLoaded = false;
-          this.reportDebugState();
-        },
-      )
-      : null;
-
     this.material = new THREE.MeshBasicMaterial({
       color: config.materialColor,
-      map: this.texture,
+      map: null,
       opacity: 1,
       transparent: false,
       depthTest: true,
@@ -62,8 +48,51 @@ export class CreatureManager {
     });
 
     this.addPrototypeCreature();
+    this.textureStatus = config.useTexture ? 'LOADING' : 'NO';
     this.reportDebugState();
+    if (config.useTexture) this.loadTexture();
   }
+
+  // The creature and its opaque fallback exist before any asynchronous request.
+  private loadTexture(): void {
+    try {
+      this.texture = new THREE.TextureLoader().load(
+        this.config.textureUrl,
+        (texture) => {
+          if (this.disposed) {
+            texture.dispose();
+            return;
+          }
+          texture.colorSpace = THREE.SRGBColorSpace;
+          this.material.color.set(0xffffff);
+          this.material.map = texture;
+          this.material.transparent = true;
+          this.material.depthWrite = false;
+          this.material.alphaTest = this.config.textureAlphaTest;
+          this.material.needsUpdate = true;
+          this.textureStatus = 'YES';
+          this.reportDebugState();
+        },
+        undefined,
+        this.handleTextureError,
+      );
+    } catch (error) {
+      this.handleTextureError(error);
+    }
+  }
+
+  private readonly handleTextureError = (error: unknown): void => {
+    if (this.disposed) return;
+    console.error(
+      '[CreatureManager] Texture load failed; keeping orange fallback:',
+      this.config.textureUrl,
+      error,
+    );
+    this.texture?.dispose();
+    this.texture = null;
+    this.textureStatus = 'ERROR';
+    this.reportDebugState();
+  };
 
   update(deltaSeconds: number): void {
     for (const creature of this.creatures) {
@@ -90,6 +119,7 @@ export class CreatureManager {
   }
 
   dispose(): void {
+    this.disposed = true;
     for (const creature of this.creatures) {
       this.scene.remove(creature.object3d);
     }
@@ -120,7 +150,9 @@ export class CreatureManager {
       x: prototype?.object3d.position.x ?? 0,
       y: prototype?.object3d.position.y ?? 0,
       z: prototype?.object3d.position.z ?? 0,
-      textureLoaded: this.textureLoaded,
+      textureStatus: this.textureStatus,
+      textureUrl: this.config.textureUrl,
+      materialMode: this.material.map ? 'TEXTURE' : 'FALLBACK',
     });
   }
 }

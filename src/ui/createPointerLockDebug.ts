@@ -24,6 +24,8 @@ export function createPointerLockDebug(): PointerLockDebug {
   const creaturePositionY = document.createElement('span');
   const creaturePositionZ = document.createElement('span');
   const textureLoaded = document.createElement('span');
+  const textureUrl = document.createElement('span');
+  const materialMode = document.createElement('span');
   debug.append(
     pointerLock,
     canvasClick,
@@ -36,6 +38,8 @@ export function createPointerLockDebug(): PointerLockDebug {
     creaturePositionY,
     creaturePositionZ,
     textureLoaded,
+    textureUrl,
+    materialMode,
   );
   document.body.appendChild(debug);
 
@@ -50,7 +54,9 @@ export function createPointerLockDebug(): PointerLockDebug {
   creaturePositionX.textContent = 'X: 0.00';
   creaturePositionY.textContent = 'Y: 0.00';
   creaturePositionZ.textContent = 'Z: 0.00';
-  textureLoaded.textContent = 'Texture Loaded: NO';
+  textureLoaded.textContent = 'Texture: LOADING';
+  textureUrl.textContent = 'Texture URL: —';
+  materialMode.textContent = 'Material Mode: FALLBACK';
 
   return {
     setLocked(isLocked: boolean): void {
@@ -76,7 +82,9 @@ export function createPointerLockDebug(): PointerLockDebug {
       creaturePositionX.textContent = `X: ${state.x.toFixed(2)}`;
       creaturePositionY.textContent = `Y: ${state.y.toFixed(2)}`;
       creaturePositionZ.textContent = `Z: ${state.z.toFixed(2)}`;
-      textureLoaded.textContent = `Texture Loaded: ${state.textureLoaded ? 'YES' : 'NO'}`;
+      textureLoaded.textContent = `Texture: ${state.textureStatus}`;
+      textureUrl.textContent = `Texture URL: ${state.textureUrl}`;
+      materialMode.textContent = `Material Mode: ${state.materialMode}`;
     },
   };
 }

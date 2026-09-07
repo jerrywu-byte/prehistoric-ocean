@@ -6,6 +6,7 @@ export interface CreatureConfig {
   readonly subtitle: string;
   readonly textureUrl: string;
   readonly useTexture: boolean;
+  readonly textureAlphaTest: number;
   readonly materialColor: number;
   readonly materialFog: boolean;
   readonly facingMode: CreatureFacingMode;
@@ -33,8 +34,9 @@ export const PROTOTYPE_CREATURE: CreatureConfig = {
   id: 'prototype-creature',
   displayName: '測試生物',
   subtitle: 'Prototype Creature',
-  textureUrl: './assets/creatures/prototype-creature.svg',
-  useTexture: false,
+  textureUrl: './assets/creatures/texture-test-creature.png',
+  useTexture: true,
+  textureAlphaTest: 0.05,
   materialColor: 0xffa500,
   materialFog: false,
   facingMode: 'billboard',
