@@ -1,0 +1,48 @@
+import type { Side } from 'three';
+import type { DirectionalTextureSet } from '../creatures/directional/types';
+
+export type Vector3Tuple = readonly [number, number, number];
+export type BehaviorProfile =
+  | 'gentle_drifter' | 'active_swimmer' | 'schooling_fish'
+  | 'large_predator' | 'seabed_crawler';
+
+// Each load returns an owned set. Caller disposes every unique texture.
+// The same contract accepts synchronous Canvas or asynchronous image providers.
+export interface DirectionalAssetSource {
+  readonly id: string;
+  readonly load: () => DirectionalTextureSet | Promise<DirectionalTextureSet>;
+}
+
+export interface CreatureSpeciesDefinition {
+  readonly id: string;
+  readonly name: { readonly zhTW: string; readonly en: string };
+  readonly scientificName?: string;
+  readonly directionalAssets: DirectionalAssetSource;
+  readonly defaultScale: { readonly width: number; readonly height: number };
+  readonly rendering: {
+    // Discriminator for future rendering implementations, not implemented here.
+    readonly mode: 'directional_8';
+    readonly billboard: 'cylindrical';
+    readonly fallbackColor: number;
+    readonly transparent: boolean;
+    readonly alphaTest: number;
+    readonly side: Side;
+    readonly depthTest: boolean;
+    readonly depthWrite: boolean;
+    readonly fog: boolean;
+    readonly toneMapped: boolean;
+  };
+  readonly orientation: {
+    readonly defaultHeadingDegrees: number;
+    readonly directionalHysteresisDegrees: number;
+  };
+  readonly interaction: {
+    readonly interactionDistance: number;
+    readonly minimumObservationDistance: number;
+  };
+  // Capability metadata only; no runtime movement, animation or AI.
+  readonly movement: { readonly enabled: boolean };
+  readonly animation: { readonly enabled: boolean; readonly framesPerDirection: number };
+  readonly behaviorProfile: BehaviorProfile;
+  readonly spawnDefaults: { readonly scaleMultiplier: number };
+}

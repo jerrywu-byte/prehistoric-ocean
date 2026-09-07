@@ -1,5 +1,5 @@
-export const DIRECTIONAL_VIEWS = ['FRONT', 'FRONT_RIGHT', 'RIGHT', 'BACK_RIGHT', 'BACK', 'BACK_LEFT', 'LEFT', 'FRONT_LEFT'] as const;
-export type DirectionalView = typeof DIRECTIONAL_VIEWS[number];
+import { DIRECTIONAL_VIEWS, type DirectionalView } from './types';
+export { DIRECTIONAL_VIEWS, type DirectionalView } from './types';
 const TAU = Math.PI * 2;
 
 export function wrapAngle(angle: number): number {

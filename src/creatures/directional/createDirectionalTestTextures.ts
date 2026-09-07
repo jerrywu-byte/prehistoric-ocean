@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DIRECTIONAL_LABELS } from './types';
 import { DIRECTIONAL_VIEWS, type DirectionalView } from './getDirectionalView';
 
 export type DirectionalTextures = Record<DirectionalView, THREE.CanvasTexture>;
@@ -114,9 +115,9 @@ export function createDirectionalTestTextures(): DirectionalTextures {
         ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy);
         ctx.closePath(); ctx.fill();
       };
-      if (view === 'LEFT' || view === 'RIGHT') {
+      if (view === 'left' || view === 'right') {
         ctx.save();
-        if (view === 'LEFT') { ctx.translate(512, 0); ctx.scale(-1, 1); }
+        if (view === 'left') { ctx.translate(512, 0); ctx.scale(-1, 1); }
         const color = '#39dcc8';
         triangle(165, 160, 45, 85, 45, 235, color);
         triangle(210, 115, 265, 55, 310, 125, '#087c87');
@@ -125,11 +126,11 @@ export function createDirectionalTestTextures(): DirectionalTextures {
         ellipse(390, 140, 21, 21, '#ffffff');
         ellipse(396, 140, 10, 12, '#113846');
         ctx.restore();
-      } else if (view === 'FRONT_RIGHT' || view === 'FRONT_LEFT') {
-        drawFrontThreeQuarter(ctx, view === 'FRONT_LEFT' ? 'left' : 'right');
-      } else if (view === 'BACK_RIGHT' || view === 'BACK_LEFT') {
-        drawRearThreeQuarter(ctx, view === 'BACK_LEFT' ? 'left' : 'right');
-      } else if (view === 'FRONT') {
+      } else if (view === 'frontRight' || view === 'frontLeft') {
+        drawFrontThreeQuarter(ctx, view === 'frontLeft' ? 'left' : 'right');
+      } else if (view === 'backRight' || view === 'backLeft') {
+        drawRearThreeQuarter(ctx, view === 'backLeft' ? 'left' : 'right');
+      } else if (view === 'front') {
         triangle(208, 140, 114, 190, 213, 199, '#12a999');
         triangle(304, 140, 398, 190, 299, 199, '#12a999');
         ellipse(256, 161, 69, 104, '#39dcc8');
@@ -148,7 +149,7 @@ export function createDirectionalTestTextures(): DirectionalTextures {
       ctx.font = 'bold 22px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(view.split('_').map(part => part[0]).join(''), 256, 292);
+      ctx.fillText(DIRECTIONAL_LABELS[view].split('_').map(part => part[0]).join(''), 256, 292);
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
       textures[view] = texture;

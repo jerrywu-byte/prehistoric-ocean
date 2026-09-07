@@ -5,7 +5,7 @@ import {
   type CreatureDebugState,
   type CreatureProximityState,
 } from '../creatures/CreatureManager';
-import { PROTOTYPE_CREATURE } from '../creatures/creatureConfig';
+import { AMMONITE_SPAWN } from '../world/creatureSpawns';
 import { createOceanEnvironment } from '../world/createOceanEnvironment';
 
 export class OceanApp {
@@ -80,10 +80,10 @@ export class OceanApp {
       this.creatureManager = new CreatureManager(
         this.scene,
         this.camera,
-        PROTOTYPE_CREATURE,
         onCreatureProximityChange,
         this.onCreatureDebugChange,
       );
+      this.creatureManager.spawnCreature(AMMONITE_SPAWN);
     } catch (error) {
       this.disableCreatureSystem('initialization', error);
     }
@@ -118,7 +118,8 @@ export class OceanApp {
       y: 0,
       z: 0,
       textureStatus: 'ERROR',
-      textureUrl: PROTOTYPE_CREATURE.textureUrl,
+      textureUrl: 'Unavailable',
+      speciesId: AMMONITE_SPAWN.speciesId,
       materialMode: 'FALLBACK',
     });
   }
