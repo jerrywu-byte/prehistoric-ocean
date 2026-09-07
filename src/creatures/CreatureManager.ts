@@ -17,6 +17,7 @@ export interface CreatureDebugState {
   readonly textureStatus: 'LOADING' | 'YES' | 'ERROR' | 'NO';
   readonly textureUrl: string;
   readonly materialMode: 'FALLBACK' | 'TEXTURE';
+  readonly creatureName?: string;
   readonly view?: string;
   readonly previousView?: string;
   readonly directionIndex?: number;
@@ -178,6 +179,7 @@ export class CreatureManager {
       z: prototype?.object3d.position.z ?? 0,
       textureStatus: this.textureStatus,
       textureUrl: this.config.facingMode === 'directional-impostor' ? 'CanvasTexture (generated)' : this.config.textureUrl,
+      creatureName: this.config.subtitle,
       view: prototype?.view ?? '—',
       previousView: prototype?.previousDirectionalView ?? '—',
       directionIndex: prototype?.directionIndex ?? -1,
@@ -186,7 +188,7 @@ export class CreatureManager {
       heading: (prototype?.headingRadians ?? 0) * 180 / Math.PI,
       distance: prototype?.distance ?? 0,
       observation: prototype && prototype.distance < this.config.minimumObservationDistance ? 'TOO CLOSE' : 'NORMAL',
-      textureMode: this.config.facingMode === 'directional-impostor' ? 'DIRECTIONAL_8' : 'SINGLE',
+      textureMode: this.config.facingMode === 'directional-impostor' ? 'AMMONITE_DIRECTIONAL_8' : 'SINGLE',
       materialMode: this.material.map ? 'TEXTURE' : 'FALLBACK',
     });
   }

@@ -44,6 +44,7 @@ const manager = new CreatureManager(scene, camera, PROTOTYPE_CREATURE,
 const mesh = scene.children[0] as THREE.Mesh<THREE.PlaneGeometry,THREE.MeshBasicMaterial>;
 assert.equal(canvases, 8);
 assert.equal(states.at(-1).view, 'FRONT');
+assert.equal(states.at(-1).creatureName, 'Ammonite');
 assert.equal(mesh.material.fog, true);
 assert.equal(mesh.material.alphaTest, .05);
 assert.equal(mesh.material.depthWrite, false);
@@ -57,7 +58,7 @@ for (let i=0; i<=8; i++) {
   manager.update(.1);
   assert.equal(states.at(-1).view, view);
   assert.equal(states.at(-1).directionIndex, i%8);
-  assert.equal(states.at(-1).textureMode, 'DIRECTIONAL_8');
+  assert.equal(states.at(-1).textureMode, 'AMMONITE_DIRECTIONAL_8');
   assert.equal(mesh.rotation.x,0);
   assert.equal(mesh.rotation.z,0);
   const normal = new THREE.Vector3(0,0,1).applyQuaternion(mesh.quaternion);
@@ -77,6 +78,8 @@ manager.update(.1);
 assert.equal(states.at(-1).distance,2);
 assert.equal(states.at(-1).observation,'TOO CLOSE');
 assert.equal(proximity.at(-1).isNearby,true);
+assert.equal(proximity.at(-1).name,'菊石');
+assert.equal(proximity.at(-1).subtitle,'Ammonite');
 camera.position.set(0,3.2,10); manager.update(.1);
 assert.equal(proximity.at(-1).isNearby,false);
 assert.deepEqual(mesh.position.toArray(),[0,3.2,2]);

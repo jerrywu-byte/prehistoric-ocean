@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createDirectionalTestTextures, type DirectionalTextures } from './directional/createDirectionalTestTextures';
+import { createDirectionalAmmoniteTextures, type DirectionalTextures } from './directional/createDirectionalAmmoniteTextures';
 import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle, type DirectionalView } from './directional/getDirectionalView';
 import type { CreatureConfig } from './creatureConfig';
 import { getSeabedHeightAt, WORLD_LIMITS } from '../world/worldLimits';
@@ -34,7 +34,7 @@ export class Creature {
   get headingRadians(): number { return this.heading; }
 
   initializeDirectionalTextures(): void {
-    this.directionalTextures = createDirectionalTestTextures();
+    this.directionalTextures = createDirectionalAmmoniteTextures();
     const material = this.object3d.material;
     material.color.set(0xffffff);
     material.transparent = true;

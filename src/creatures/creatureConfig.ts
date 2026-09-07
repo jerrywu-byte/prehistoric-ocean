@@ -34,9 +34,9 @@ export interface CreatureConfig {
 }
 
 export const PROTOTYPE_CREATURE: CreatureConfig = {
-  id: 'prototype-creature',
-  displayName: '測試生物',
-  subtitle: 'Prototype Creature',
+  id: 'ammonite',
+  displayName: '菊石',
+  subtitle: 'Ammonite',
   textureUrl: './assets/creatures/texture-test-creature.png',
   useTexture: true,
   textureAlphaTest: 0.05,
