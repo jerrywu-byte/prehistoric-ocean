@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { DIRECTIONAL_VIEWS, type DirectionalView } from './getDirectionalView';
+import { DIRECTIONAL_VIEWS, type DirectionalView } from '../../creatures/directional/getDirectionalView';
 
-export type DirectionalTextures = Record<DirectionalView, THREE.CanvasTexture>;
+import type { DirectionalTextureSet } from '../../creatures/directional/types';
 
 const VIEW_ANGLES: Record<DirectionalView, number> = {
-  FRONT: 0, FRONT_RIGHT: 45, RIGHT: 90, BACK_RIGHT: 135,
-  BACK: 180, BACK_LEFT: -135, LEFT: -90, FRONT_LEFT: -45,
+  front: 0, frontRight: 45, right: 90, backRight: 135,
+  back: 180, backLeft: -135, left: -90, frontLeft: -45,
 };
 
 function ellipse(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, color: string): void {
@@ -88,8 +88,8 @@ function drawSoftBody(ctx: CanvasRenderingContext2D, sideAmount: number, rear: b
 // Stylized reconstruction, not a species-specific anatomical reconstruction.
 // The shared shell proportions keep all views aligned; rear soft parts are
 // drawn first so the shell naturally occludes the opening and arms.
-export function createDirectionalAmmoniteTextures(): DirectionalTextures {
-  const textures = {} as DirectionalTextures;
+export function createDirectionalAmmoniteTextures(): DirectionalTextureSet {
+  const textures = {} as Record<DirectionalView, THREE.CanvasTexture>;
   try {
     for (const view of DIRECTIONAL_VIEWS) {
       const canvas = document.createElement('canvas');

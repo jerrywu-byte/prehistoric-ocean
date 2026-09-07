@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { getDirectionalView, getRelativeAngle } from '../src/creatures/directional/getDirectionalView';
 import { CreatureManager } from '../src/creatures/CreatureManager';
-import { PROTOTYPE_CREATURE } from '../src/creatures/creatureConfig';
+import { ammoniteSpecies } from '../src/species/ammonite/ammoniteSpecies';
+import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
+import { DIRECTIONAL_VIEWS, DIRECTIONAL_LABELS } from '../src/creatures/directional/types';
 const rad = (degrees: number) => degrees * Math.PI / 180;
-const views = ['FRONT','FRONT_RIGHT','RIGHT','BACK_RIGHT','BACK','BACK_LEFT','LEFT','FRONT_LEFT'] as const;
-const h = rad(PROTOTYPE_CREATURE.directionHysteresisDegrees);
+const views = DIRECTIONAL_VIEWS;
+const h = rad(ammoniteSpecies.orientation.directionalHysteresisDegrees);
 for (let i=0; i<8; i++) {
   assert.equal(getDirectionalView(rad(i*45), null, h), views[i]);
   // Every boundary, both directions, including negative angles and wraparound.
@@ -21,10 +23,10 @@ for (let i=0; i<8; i++) {
   assert.equal(getDirectionalView(rad(boundary-5.1), next, h), views[i]);
 }
 for (const angle of [22,23,21,24,22]) {
-  assert.equal(getDirectionalView(rad(angle),'FRONT',h),'FRONT');
+  assert.equal(getDirectionalView(rad(angle),'front',h),'front');
 }
-assert.equal(getDirectionalView(rad(-179),'BACK',h),'BACK');
-assert.equal(getDirectionalView(rad(179),'BACK',h),'BACK');
+assert.equal(getDirectionalView(rad(-179),'back',h),'back');
+assert.equal(getDirectionalView(rad(179),'back',h),'back');
 assert.equal(getRelativeAngle(0,8,Math.PI/2),0);
 
 // Canvas drawing adapter tests lifecycle/math/materials, not raster appearance.
@@ -39,12 +41,13 @@ const camera = new THREE.PerspectiveCamera();
 camera.position.set(0,3.2,10);
 const states: any[] = [];
 const proximity: any[] = [];
-const manager = new CreatureManager(scene, camera, PROTOTYPE_CREATURE,
+const manager = new CreatureManager(scene, camera,
   s=>proximity.push(s), s=>states.push(s));
+manager.spawnCreature(AMMONITE_SPAWN);
 const mesh = scene.children[0] as THREE.Mesh<THREE.PlaneGeometry,THREE.MeshBasicMaterial>;
 assert.equal(canvases, 8);
 assert.equal(states.at(-1).view, 'FRONT');
-assert.equal(states.at(-1).creatureName, 'Ammonite');
+assert.equal(states.at(-1).creatureName, '菊石 / Ammonite');
 assert.equal(mesh.material.fog, true);
 assert.equal(mesh.material.alphaTest, .05);
 assert.equal(mesh.material.depthWrite, false);
@@ -56,9 +59,9 @@ for (let i=0; i<=8; i++) {
   const view = views[i%8];
   camera.rotation.set(.8,.3,.2);
   manager.update(.1);
-  assert.equal(states.at(-1).view, view);
+  assert.equal(states.at(-1).view, DIRECTIONAL_LABELS[view]);
   assert.equal(states.at(-1).directionIndex, i%8);
-  assert.equal(states.at(-1).textureMode, 'AMMONITE_DIRECTIONAL_8');
+  assert.equal(states.at(-1).textureMode, 'DIRECTIONAL_8');
   assert.equal(mesh.rotation.x,0);
   assert.equal(mesh.rotation.z,0);
   const normal = new THREE.Vector3(0,0,1).applyQuaternion(mesh.quaternion);

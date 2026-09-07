@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from 'three';
 import { CreatureManager } from '../src/creatures/CreatureManager';
-import { PROTOTYPE_CREATURE } from '../src/creatures/creatureConfig';
+import { ammoniteSpecies } from '../src/species/ammonite/ammoniteSpecies';
+import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
+import { SpeciesRegistry } from '../src/species/speciesRegistry';
+import { DIRECTIONAL_VIEWS, type DirectionalTextureSet } from '../src/creatures/directional/types';
 
 // Exercise the real TextureLoader/ImageLoader with a minimal image event adapter.
 // File errors behave like browser image errors; GPU rendering requires Chrome.
@@ -28,8 +31,15 @@ async function check(url: string, success: boolean) {
   const camera = new THREE.PerspectiveCamera(65, 1, .1, 500);
   camera.position.set(0, 3.2, 10);
   const states: any[] = [];
-  const manager = new CreatureManager(scene, camera, {...PROTOTYPE_CREATURE, facingMode: 'billboard', materialFog: false, textureUrl: url},
-    () => {}, state => states.push(state));
+  const registry = new SpeciesRegistry([{...ammoniteSpecies,
+    directionalAssets: {id: url, load: async () => {
+      const texture = await new THREE.TextureLoader().loadAsync(url);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return Object.fromEntries(DIRECTIONAL_VIEWS.map(view => [view, texture])) as DirectionalTextureSet;
+    }},
+  }]);
+  const manager = new CreatureManager(scene, camera, () => {}, state => states.push(state), registry);
+  manager.spawnCreature(AMMONITE_SPAWN);
   const mesh = scene.children[0] as THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   assert.equal(states.at(-1).textureStatus, 'LOADING');
   assert.equal(mesh.material.map, null);
@@ -45,7 +55,7 @@ async function check(url: string, success: boolean) {
   assert.equal(mesh.material.depthWrite, !success);
   assert.equal(mesh.material.depthTest, true);
   assert.equal(mesh.material.side, THREE.DoubleSide);
-  assert.equal(mesh.material.fog, false);
+  assert.equal(mesh.material.fog, true);
   if (success) {
     assert.equal(mesh.material.color.getHex(), 0xffffff);
     assert.equal(mesh.material.map!.colorSpace, THREE.SRGBColorSpace);
@@ -57,5 +67,5 @@ async function check(url: string, success: boolean) {
   assert.equal(scene.children.length, 0);
   console.log(success ? 'PASS: loading -> texture' : 'PASS: missing URL -> fallback; update continues');
 }
-await check(PROTOTYPE_CREATURE.textureUrl, true);
+await check('./assets/creatures/texture-test-creature.png', true);
 await check('./assets/creatures/intentionally-missing.png', false);
