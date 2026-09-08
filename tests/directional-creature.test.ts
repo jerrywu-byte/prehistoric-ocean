@@ -70,6 +70,7 @@ for (let i=0; i<=8; i++) {
   const view = views[i%8];
   camera.rotation.set(.8,.3,.2);
   manager.update(.1);
+  manager.update(.1); // Wait beyond the configured 140 ms temporal fade.
   assert.equal(states.at(-1).view, DIRECTIONAL_LABELS[view]);
   assert.equal(states.at(-1).directionIndex, i%8);
   assert.equal(states.at(-1).textureMode, 'PITCH_DIRECTIONAL_8X3');

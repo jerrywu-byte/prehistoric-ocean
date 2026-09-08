@@ -145,7 +145,7 @@ turns before translating instead of visibly side-slipping. Horizontal Sprite vie
 camera position relative to the now-current heading; pitch layer, proximity and billboard orientation
 use the final current rendered position. Debug groups rendering, ambient and locomotion state.
 
-## v0.5.2 horizontal directional crossfade
+## v0.5.2 horizontal directional crossfade (historical; replaced in v0.5.3)
 
 Species rendering now owns horizontalDirectionBlend configuration. Ammonite enables a 16-degree
 window around each 45-degree horizontal sector boundary. Outside the window only the nearest view
@@ -168,3 +168,26 @@ when a view or pitch layer changes; opacity alone updates through the normal mat
 Fallback remains a single visible orange primary plane. Texture ownership is unchanged: all 24 maps
 are still loaded once and disposed once, while both mesh materials are disposed with the Creature.
 Debug reports primary/secondary view, blend value, boundary and continuous relative horizontal angle.
+
+## v0.5.3 temporal directional transition (current)
+
+The angle-window opacity system is removed. Rendering configuration now uses
+horizontalDirectionTransition: enabled, durationMs (140), hysteresisDegrees (4).
+The existing relative-angle selector chooses a discrete target using hysteresis;
+TemporalDirectionTransition advances independently using delta seconds and smoothstep.
+An unchanged target never restarts elapsed time. A stationary boundary angle cannot
+keep two sprites visible indefinitely.
+
+Completion transfers the destination texture to the reusable primary plane at opacity 1,
+hides the secondary at exactly opacity 0, clears its map without disposing the texture,
+and clears transition source/destination references. No new planes are allocated.
+On interruption, the dominant texture becomes the new source (destination wins a 50/50
+tie); if it is already the requested view, the transition collapses immediately.
+Pitch-layer changes collapse the horizontal transition before applying maps from the
+new layer. Pitch selection/hysteresis and all motion logic remain unchanged.
+
+Debug shows current/target direction, ACTIVE/IDLE, raw progress, source/destination,
+and actual material opacities. Tests cover a stationary boundary over 60 simulated
+seconds, repeated identical targets, interruption, wrap/hysteresis, pitch change cleanup,
+material/texture disposal and existing motion/assets. Browser visual acceptance remains
+a separate Windows Chrome check.

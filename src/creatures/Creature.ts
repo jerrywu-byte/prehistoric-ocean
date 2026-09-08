@@ -7,7 +7,7 @@ import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle, type Direction
 import { calculateAmbientMotionOffset, getDeterministicMotionPhase } from './motion/ambientMotion';
 import { GentleRoamLocomotion, getDeterministicLocomotionSeed } from './motion/gentleRoam';
 import { WORLD_LIMITS, constrainCreaturePosition } from '../world/worldLimits';
-import { getHorizontalDirectionBlend } from './directional/horizontalDirectionBlend';
+import { TemporalDirectionTransition } from './directional/TemporalDirectionTransition';
 
 export class Creature {
   readonly object3d: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
@@ -28,7 +28,7 @@ export class Creature {
   textureStatus: 'LOADING' | 'YES' | 'ERROR' = 'LOADING';
   relativeAngle = 0;
   horizontalBlend = 0;
-  horizontalBlendBoundary: number | null = null;
+  readonly horizontalTransition: TemporalDirectionTransition;
   distance = 0;
   verticalAngle = 0;
   targetPitch = 0;
@@ -55,6 +55,7 @@ export class Creature {
       throw new Error('Invalid creature spawn transform: ' + spawn.id);
     }
     const r = species.rendering;
+    this.horizontalTransition = new TemporalDirectionTransition(r.horizontalDirectionTransition.durationMs);
     const material = new THREE.MeshBasicMaterial({
       color: r.fallbackColor, transparent: false, depthWrite: true,
       side: r.side, depthTest: r.depthTest, fog: r.fog, toneMapped: r.toneMapped,
@@ -163,6 +164,7 @@ export class Creature {
     const horizontalDistance = Math.hypot(dx, dz);
     const orientation = this.species.orientation;
     this.verticalAngle = Math.atan2(camera.position.y - this.object3d.position.y, horizontalDistance);
+    const previousPitchLayer = this.currentPitchLayer;
     if (this.species.rendering.mode === 'pitch_directional_8x3') {
       this.currentPitchLayer = getPitchLayer(THREE.MathUtils.radToDeg(this.verticalAngle), this.currentPitchLayer,
         orientation.pitchLayerThresholdDegrees, orientation.pitchLayerHysteresisDegrees);
@@ -178,22 +180,22 @@ export class Creature {
     let yaw = this.object3d.rotation.y;
     if (horizontalDistance >= orientation.billboardHorizontalEpsilon) {
       this.relativeAngle = getRelativeAngle(dx, dz, this.headingRadians);
-      const blendConfig = this.species.rendering.horizontalDirectionBlend;
-      const blendState = blendConfig.enabled
-        ? getHorizontalDirectionBlend(this.relativeAngle, blendConfig.windowDegrees)
-        : null;
-      const next = blendState?.primaryView ?? getDirectionalView(this.relativeAngle, this.view,
-        THREE.MathUtils.degToRad(this.species.orientation.directionalHysteresisDegrees));
+      const config = this.species.rendering.horizontalDirectionTransition;
+      const next = getDirectionalView(this.relativeAngle,
+        this.horizontalTransition.initialized ? this.horizontalTransition.target : null,
+        THREE.MathUtils.degToRad(config.enabled ? config.hysteresisDegrees : orientation.directionalHysteresisDegrees));
       if (next !== this.view) {
         this.previousDirectionalView = this.view;
         this.currentDirectionalView = next;
       }
-      this.secondaryDirectionalView = blendState?.secondaryView ?? null;
-      this.horizontalBlend = blendState?.blend ?? 0;
-      this.horizontalBlendBoundary = blendState?.boundaryAngle ?? null;
+      this.horizontalTransition.select(next, !config.enabled);
       yaw = Math.atan2(dx, dz);
     }
-    if (this.currentDirectionalView === null) this.currentDirectionalView = 'front';
+    if (previousPitchLayer !== this.currentPitchLayer) this.horizontalTransition.collapse();
+    else this.horizontalTransition.update(deltaSeconds);
+    this.currentDirectionalView = this.horizontalTransition.current;
+    this.secondaryDirectionalView = this.horizontalTransition.destination;
+    this.horizontalBlend = this.horizontalTransition.blend;
     this.updateDirectionalMaterials();
     // The full camera-facing mode depends only on position, never camera roll.
     // At the pole retain yaw to keep up stable; elevation still reaches ±90°.
@@ -222,6 +224,9 @@ export class Creature {
     const secondaryMaterial = this.secondaryObject3d.material;
     const primaryTexture = this.selectedTexture(this.view);
     if (!primaryTexture) {
+      primaryMaterial.opacity = 1;
+      secondaryMaterial.opacity = 0;
+      secondaryMaterial.map = null;
       this.secondaryObject3d.visible = false;
       return;
     }
@@ -236,6 +241,10 @@ export class Creature {
     primaryMaterial.opacity = isBlending ? 1 - this.horizontalBlend : 1;
     this.secondaryObject3d.visible = isBlending;
     secondaryMaterial.opacity = isBlending ? this.horizontalBlend : 0;
+    if (!isBlending && secondaryMaterial.map !== null) {
+      secondaryMaterial.map = null;
+      secondaryMaterial.needsUpdate = true;
+    }
     if (isBlending && secondaryMaterial.map !== secondaryTexture) {
       secondaryMaterial.map = secondaryTexture;
       secondaryMaterial.needsUpdate = true;

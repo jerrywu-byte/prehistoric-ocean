@@ -24,7 +24,12 @@ export interface CreatureDebugState {
   readonly view?: string;
   readonly secondaryView?: string;
   readonly horizontalBlend?: number;
-  readonly blendBoundary?: number;
+  readonly horizontalTarget?: string;
+  readonly transitionActive?: boolean;
+  readonly transitionProgress?: number;
+  readonly transitionSource?: string;
+  readonly primaryOpacity?: number;
+  readonly secondaryOpacity?: number;
   readonly previousView?: string;
   readonly directionIndex?: number;
   readonly hysteresisDegrees?: number;
@@ -145,13 +150,16 @@ export class CreatureManager {
         ? DIRECTIONAL_LABELS[creature.secondaryDirectionalView]
         : 'NONE',
       horizontalBlend: creature.horizontalBlend,
-      blendBoundary: creature.horizontalBlendBoundary === null
-        ? undefined
-        : THREE.MathUtils.radToDeg(creature.horizontalBlendBoundary),
+      horizontalTarget: DIRECTIONAL_LABELS[creature.horizontalTransition.target],
+      transitionActive: creature.horizontalTransition.active,
+      transitionProgress: creature.horizontalTransition.progress,
+      transitionSource: creature.horizontalTransition.source ? DIRECTIONAL_LABELS[creature.horizontalTransition.source] : 'NONE',
+      primaryOpacity: creature.object3d.material.opacity,
+      secondaryOpacity: creature.secondaryObject3d.material.opacity,
       previousView: creature.previousDirectionalView ? DIRECTIONAL_LABELS[creature.previousDirectionalView] : '—',
       directionIndex: creature.directionIndex,
-      hysteresisDegrees: species.rendering.horizontalDirectionBlend.enabled
-        ? 0
+      hysteresisDegrees: species.rendering.horizontalDirectionTransition.enabled
+        ? species.rendering.horizontalDirectionTransition.hysteresisDegrees
         : species.orientation.directionalHysteresisDegrees,
       relativeAngle: creature.relativeAngle * 180 / Math.PI,
       heading: creature.headingRadians * 180 / Math.PI,

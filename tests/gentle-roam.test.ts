@@ -132,9 +132,9 @@ assert.equal(creature.object3d.rotation.z,0);
 // Horizontal Sprite selection follows current heading even when camera does not move.
 camera.position.set(creature.object3d.position.x,creature.object3d.position.y,creature.object3d.position.z+8);
 creature.locomotion!.headingRadians=Math.PI/2;creature.update(0,camera);
-assert.equal(creature.view,'front');
+assert.equal(creature.horizontalTransition.target,'front');
 creature.locomotion!.headingRadians=0;creature.update(0,camera);
-assert.equal(creature.view,'right');
+assert.equal(creature.horizontalTransition.target,'right');
 // Pitch layer continues to use the current rendered position.
 camera.position.set(creature.object3d.position.x,creature.object3d.position.y+10,creature.object3d.position.z+8);
 creature.update(0,camera);

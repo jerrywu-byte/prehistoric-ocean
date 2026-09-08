@@ -54,6 +54,7 @@ for(const [layer,elevation] of [['mid',0],['top',40],['bottom',-40]] as const) {
     camera.position.set(8*Math.cos(azimuth),3.2+8*Math.tan(THREE.MathUtils.degToRad(elevation)),2+8*Math.sin(azimuth));
     camera.rotation.set(.6,1.5,.9); // Ignore camera roll and look direction.
     manager.update(.1);
+    manager.update(.1); // Direction selection precedes visual transition completion.
     assert.equal(creature.view,DIRECTIONAL_VIEWS[i]);
     assert.equal(creature.currentPitchLayer,layer);
     assert.equal(debug.at(-1).textureKey,layer.toUpperCase()+'_'+DIRECTIONAL_LABELS[DIRECTIONAL_VIEWS[i]]);
