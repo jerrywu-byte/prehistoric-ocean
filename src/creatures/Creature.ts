@@ -7,9 +7,11 @@ import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle, type Direction
 import { calculateAmbientMotionOffset, getDeterministicMotionPhase } from './motion/ambientMotion';
 import { GentleRoamLocomotion, getDeterministicLocomotionSeed } from './motion/gentleRoam';
 import { WORLD_LIMITS, constrainCreaturePosition } from '../world/worldLimits';
+import { getHorizontalDirectionBlend } from './directional/horizontalDirectionBlend';
 
 export class Creature {
   readonly object3d: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  readonly secondaryObject3d: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   headingRadians: number;
   readonly anchorPosition = new THREE.Vector3();
   readonly locomotionPosition = new THREE.Vector3();
@@ -20,10 +22,13 @@ export class Creature {
   private disposed = false;
   private motionElapsedSeconds = 0;
   currentDirectionalView: DirectionalView | null = null;
+  secondaryDirectionalView: DirectionalView | null = null;
   currentPitchLayer: PitchLayer | null = null;
   previousDirectionalView: DirectionalView | null = null;
   textureStatus: 'LOADING' | 'YES' | 'ERROR' = 'LOADING';
   relativeAngle = 0;
+  horizontalBlend = 0;
+  horizontalBlendBoundary: number | null = null;
   distance = 0;
   verticalAngle = 0;
   targetPitch = 0;
@@ -56,6 +61,22 @@ export class Creature {
     });
     this.object3d = new THREE.Mesh(geometry, material);
     this.object3d.name = spawn.id;
+    this.object3d.renderOrder = 10;
+    const secondaryMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: r.side,
+      depthTest: r.depthTest,
+      fog: r.fog,
+      toneMapped: r.toneMapped,
+    });
+    this.secondaryObject3d = new THREE.Mesh(geometry, secondaryMaterial);
+    this.secondaryObject3d.name = spawn.id + '-direction-blend';
+    this.secondaryObject3d.renderOrder = 11;
+    this.secondaryObject3d.visible = false;
+    this.object3d.add(this.secondaryObject3d);
     this.object3d.position.set(...spawn.position);
     this.anchorPosition.copy(this.object3d.position);
     this.locomotionPosition.copy(this.anchorPosition);
@@ -98,13 +119,16 @@ export class Creature {
       }
       this.directionalTextures = textures;
       const material = this.object3d.material;
+      const secondaryMaterial = this.secondaryObject3d.material;
       const r = this.species.rendering;
       material.color.set(0xffffff);
       material.transparent = r.transparent;
       material.depthWrite = r.depthWrite;
       material.alphaTest = r.alphaTest;
-      material.map = this.selectedTexture();
-      material.needsUpdate = true;
+      secondaryMaterial.transparent = r.transparent;
+      secondaryMaterial.depthWrite = r.depthWrite;
+      secondaryMaterial.alphaTest = r.alphaTest;
+      this.updateDirectionalMaterials();
       this.textureStatus = 'YES';
       onChange();
     };
@@ -154,20 +178,23 @@ export class Creature {
     let yaw = this.object3d.rotation.y;
     if (horizontalDistance >= orientation.billboardHorizontalEpsilon) {
       this.relativeAngle = getRelativeAngle(dx, dz, this.headingRadians);
-      const next = getDirectionalView(this.relativeAngle, this.view,
+      const blendConfig = this.species.rendering.horizontalDirectionBlend;
+      const blendState = blendConfig.enabled
+        ? getHorizontalDirectionBlend(this.relativeAngle, blendConfig.windowDegrees)
+        : null;
+      const next = blendState?.primaryView ?? getDirectionalView(this.relativeAngle, this.view,
         THREE.MathUtils.degToRad(this.species.orientation.directionalHysteresisDegrees));
       if (next !== this.view) {
         this.previousDirectionalView = this.view;
         this.currentDirectionalView = next;
       }
+      this.secondaryDirectionalView = blendState?.secondaryView ?? null;
+      this.horizontalBlend = blendState?.blend ?? 0;
+      this.horizontalBlendBoundary = blendState?.boundaryAngle ?? null;
       yaw = Math.atan2(dx, dz);
     }
     if (this.currentDirectionalView === null) this.currentDirectionalView = 'front';
-    const selected = this.selectedTexture();
-    if (selected && this.object3d.material.map !== selected) {
-      this.object3d.material.map = selected;
-      this.object3d.material.needsUpdate = true;
-    }
+    this.updateDirectionalMaterials();
     // The full camera-facing mode depends only on position, never camera roll.
     // At the pole retain yaw to keep up stable; elevation still reaches ±90°.
     if (this.species.rendering.billboard === 'cameraFacing') {
@@ -182,12 +209,37 @@ export class Creature {
     return this.object3d.position.distanceToSquared(position);
   }
 
-  private selectedTexture(): THREE.Texture | null {
+  private selectedTexture(view: DirectionalView | null): THREE.Texture | null {
     const set = this.directionalTextures;
     if (!set) return null;
     return isPitchTextureSet(set)
-      ? set[this.currentPitchLayer ?? 'mid'][this.view ?? 'front']
-      : set[this.view ?? 'front'];
+      ? set[this.currentPitchLayer ?? 'mid'][view ?? 'front']
+      : set[view ?? 'front'];
+  }
+
+  private updateDirectionalMaterials(): void {
+    const primaryMaterial = this.object3d.material;
+    const secondaryMaterial = this.secondaryObject3d.material;
+    const primaryTexture = this.selectedTexture(this.view);
+    if (!primaryTexture) {
+      this.secondaryObject3d.visible = false;
+      return;
+    }
+    if (primaryMaterial.map !== primaryTexture) {
+      primaryMaterial.map = primaryTexture;
+      primaryMaterial.needsUpdate = true;
+    }
+    const secondaryTexture = this.selectedTexture(this.secondaryDirectionalView);
+    const isBlending = this.secondaryDirectionalView !== null
+      && secondaryTexture !== null
+      && this.horizontalBlend > 0;
+    primaryMaterial.opacity = isBlending ? 1 - this.horizontalBlend : 1;
+    this.secondaryObject3d.visible = isBlending;
+    secondaryMaterial.opacity = isBlending ? this.horizontalBlend : 0;
+    if (isBlending && secondaryMaterial.map !== secondaryTexture) {
+      secondaryMaterial.map = secondaryTexture;
+      secondaryMaterial.needsUpdate = true;
+    }
   }
 
   private disposeTextures(textures: CreatureTextureSet): void {
@@ -203,5 +255,6 @@ export class Creature {
     if (this.directionalTextures) this.disposeTextures(this.directionalTextures);
     this.directionalTextures = null;
     this.object3d.material.dispose();
+    this.secondaryObject3d.material.dispose();
   }
 }

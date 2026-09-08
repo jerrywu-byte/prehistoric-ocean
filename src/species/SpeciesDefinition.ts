@@ -58,6 +58,10 @@ export interface CreatureSpeciesDefinition {
     readonly depthWrite: boolean;
     readonly fog: boolean;
     readonly toneMapped: boolean;
+    readonly horizontalDirectionBlend: {
+      readonly enabled: boolean;
+      readonly windowDegrees: number;
+    };
   };
   readonly orientation: {
     readonly defaultHeadingDegrees: number;

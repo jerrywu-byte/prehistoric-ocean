@@ -22,6 +22,9 @@ export interface CreatureDebugState {
   readonly speciesId?: string;
   readonly creatureName?: string;
   readonly view?: string;
+  readonly secondaryView?: string;
+  readonly horizontalBlend?: number;
+  readonly blendBoundary?: number;
   readonly previousView?: string;
   readonly directionIndex?: number;
   readonly hysteresisDegrees?: number;
@@ -138,9 +141,18 @@ export class CreatureManager {
       speciesId: species.id,
       creatureName: species.name.zhTW + ' / ' + species.name.en,
       view: creature.view ? DIRECTIONAL_LABELS[creature.view] : '—',
+      secondaryView: creature.secondaryDirectionalView
+        ? DIRECTIONAL_LABELS[creature.secondaryDirectionalView]
+        : 'NONE',
+      horizontalBlend: creature.horizontalBlend,
+      blendBoundary: creature.horizontalBlendBoundary === null
+        ? undefined
+        : THREE.MathUtils.radToDeg(creature.horizontalBlendBoundary),
       previousView: creature.previousDirectionalView ? DIRECTIONAL_LABELS[creature.previousDirectionalView] : '—',
       directionIndex: creature.directionIndex,
-      hysteresisDegrees: species.orientation.directionalHysteresisDegrees,
+      hysteresisDegrees: species.rendering.horizontalDirectionBlend.enabled
+        ? 0
+        : species.orientation.directionalHysteresisDegrees,
       relativeAngle: creature.relativeAngle * 180 / Math.PI,
       heading: creature.headingRadians * 180 / Math.PI,
       verticalAngle: THREE.MathUtils.radToDeg(creature.verticalAngle),

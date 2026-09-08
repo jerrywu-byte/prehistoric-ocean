@@ -144,3 +144,27 @@ within 25 degrees, reduced through 60 degrees, and reaches zero above 100 degree
 turns before translating instead of visibly side-slipping. Horizontal Sprite view continues to use
 camera position relative to the now-current heading; pitch layer, proximity and billboard orientation
 use the final current rendered position. Debug groups rendering, ambient and locomotion state.
+
+## v0.5.2 horizontal directional crossfade
+
+Species rendering now owns horizontalDirectionBlend configuration. Ammonite enables a 16-degree
+window around each 45-degree horizontal sector boundary. Outside the window only the nearest view
+is rendered. Inside it, a pure angle selector returns the two adjacent views and a smoothstep blend;
+the boundary center is 50/50. Angle wrapping uses the existing directional convention, including
+the BACK boundary around ±180 degrees.
+
+Crossfade-enabled species use continuous relative horizontal angle instead of the legacy 5-degree
+direction hysteresis, preventing a held view followed by a hard switch. The old hysteresis path is
+retained for species with blending disabled. Pitch-layer selection and its hysteresis remain separate:
+both horizontal maps are always selected from the same current TOP, MID or BOTTOM layer.
+
+Creature keeps its existing mesh as the primary plane and owns one child mesh as the secondary plane.
+They share geometry and world transform, so position, scale, camera-facing pitch/yaw and zero roll are
+identical. Primary opacity is 1 - blend and secondary opacity is blend. The secondary is hidden outside
+the blend window. Both texture materials keep depthWrite disabled and use fixed render orders 10/11,
+which provides deterministic composition without a positional offset or z-fighting. Maps change only
+when a view or pitch layer changes; opacity alone updates through the normal material uniform.
+
+Fallback remains a single visible orange primary plane. Texture ownership is unchanged: all 24 maps
+are still loaded once and disposed once, while both mesh materials are disposed with the Creature.
+Debug reports primary/secondary view, blend value, boundary and continuous relative horizontal angle.

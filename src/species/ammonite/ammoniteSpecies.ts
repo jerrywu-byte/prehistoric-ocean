@@ -19,6 +19,10 @@ export const ammoniteSpecies: CreatureSpeciesDefinition = {
     depthWrite: false,
     fog: true,
     toneMapped: false,
+    horizontalDirectionBlend: {
+      enabled: true,
+      windowDegrees: 16,
+    },
   },
   orientation: {
     defaultHeadingDegrees: 90,
