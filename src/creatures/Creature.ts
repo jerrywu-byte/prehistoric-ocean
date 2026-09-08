@@ -3,7 +3,12 @@ import { getTargetPitch, smoothPitch } from './directional/constrainedPitch';
 import type { CreatureSpeciesDefinition } from '../species/SpeciesDefinition';
 import { PITCH_LAYERS, getPitchLayer, isPitchTextureSet, type CreatureTextureSet, type PitchLayer } from './directional/pitchLayers';
 import type { CreatureSpawnConfig } from './CreatureSpawnConfig';
-import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle, type DirectionalView } from './directional/getDirectionalView';
+import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle } from './directional/getDirectionalView';
+import {
+  DIRECTIONAL_16_VIEWS,
+  getMissingDirectionalViews,
+  type HorizontalDirectionalView,
+} from './directional/types';
 import { calculateAmbientMotionOffset, getDeterministicMotionPhase } from './motion/ambientMotion';
 import { GentleRoamLocomotion, getDeterministicLocomotionSeed } from './motion/gentleRoam';
 import { WORLD_LIMITS, constrainCreaturePosition } from '../world/worldLimits';
@@ -21,10 +26,11 @@ export class Creature {
   private directionalTextures: CreatureTextureSet | null = null;
   private disposed = false;
   private motionElapsedSeconds = 0;
-  currentDirectionalView: DirectionalView | null = null;
-  secondaryDirectionalView: DirectionalView | null = null;
+  currentDirectionalView: HorizontalDirectionalView | null = null;
+  secondaryDirectionalView: HorizontalDirectionalView | null = null;
   currentPitchLayer: PitchLayer | null = null;
-  previousDirectionalView: DirectionalView | null = null;
+  previousDirectionalView: HorizontalDirectionalView | null = null;
+  missingAssetKeys: readonly HorizontalDirectionalView[] = [];
   textureStatus: 'LOADING' | 'YES' | 'ERROR' = 'LOADING';
   relativeAngle = 0;
   horizontalBlend = 0;
@@ -33,9 +39,13 @@ export class Creature {
   verticalAngle = 0;
   targetPitch = 0;
   appliedPitch = 0;
-  get view(): DirectionalView | null { return this.currentDirectionalView; }
+  get view(): HorizontalDirectionalView | null { return this.currentDirectionalView; }
   get directionIndex(): number {
-    return this.view === null ? -1 : DIRECTIONAL_VIEWS.indexOf(this.view);
+    return this.view === null ? -1 : this.horizontalViews.indexOf(this.view);
+  }
+  get sectorSizeDegrees(): number { return 360 / this.horizontalViews.length; }
+  private get horizontalViews(): readonly HorizontalDirectionalView[] {
+    return this.species.rendering.mode === 'directional_16' ? DIRECTIONAL_16_VIEWS : DIRECTIONAL_VIEWS;
   }
 
   constructor(
@@ -111,14 +121,17 @@ export class Creature {
     const apply = (textures: CreatureTextureSet): void => {
       if (this.disposed) { this.disposeTextures(textures); return; }
       const layered = this.species.rendering.mode === 'pitch_directional_8x3';
+      const views = this.horizontalViews;
       const valid = layered
         ? isPitchTextureSet(textures) && PITCH_LAYERS.every(layer => DIRECTIONAL_VIEWS.every(view => textures[layer]?.[view]?.isTexture))
-        : !isPitchTextureSet(textures) && DIRECTIONAL_VIEWS.every(view => textures[view]?.isTexture);
+        : !isPitchTextureSet(textures)
+          && views.every(view => (textures as Partial<Record<HorizontalDirectionalView, THREE.Texture>>)[view]?.isTexture);
       if (!valid) {
         this.disposeTextures(textures);
         throw new Error('Directional asset set is incomplete or does not match rendering mode');
       }
       this.directionalTextures = textures;
+      this.missingAssetKeys = getMissingDirectionalViews(textures);
       const material = this.object3d.material;
       const secondaryMaterial = this.secondaryObject3d.material;
       const r = this.species.rendering;
@@ -183,7 +196,8 @@ export class Creature {
       const config = this.species.rendering.horizontalDirectionTransition;
       const next = getDirectionalView(this.relativeAngle,
         this.horizontalTransition.initialized ? this.horizontalTransition.target : null,
-        THREE.MathUtils.degToRad(config.enabled ? config.hysteresisDegrees : orientation.directionalHysteresisDegrees));
+        THREE.MathUtils.degToRad(config.enabled ? config.hysteresisDegrees : orientation.directionalHysteresisDegrees),
+        this.horizontalViews);
       if (next !== this.view) {
         this.previousDirectionalView = this.view;
         this.currentDirectionalView = next;
@@ -211,12 +225,12 @@ export class Creature {
     return this.object3d.position.distanceToSquared(position);
   }
 
-  private selectedTexture(view: DirectionalView | null): THREE.Texture | null {
+  private selectedTexture(view: HorizontalDirectionalView | null): THREE.Texture | null {
     const set = this.directionalTextures;
     if (!set) return null;
     return isPitchTextureSet(set)
-      ? set[this.currentPitchLayer ?? 'mid'][view ?? 'front']
-      : set[view ?? 'front'];
+      ? set[this.currentPitchLayer ?? 'mid'][view as keyof typeof set.mid ?? 'front']
+      : (set as Partial<Record<HorizontalDirectionalView, THREE.Texture>>)[view ?? 'front'] ?? null;
   }
 
   private updateDirectionalMaterials(): void {

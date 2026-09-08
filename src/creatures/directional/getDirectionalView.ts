@@ -1,4 +1,4 @@
-import { DIRECTIONAL_VIEWS, type DirectionalView } from './types';
+import { DIRECTIONAL_VIEWS, type HorizontalDirectionalView } from './types';
 export { DIRECTIONAL_VIEWS, type DirectionalView } from './types';
 const TAU = Math.PI * 2;
 
@@ -14,15 +14,19 @@ export function getRelativeAngle(dx: number, dz: number, heading: number): numbe
 
 export function getDirectionalView(
   angle: number,
-  previous: DirectionalView | null,
+  previous: HorizontalDirectionalView | null,
   hysteresis: number,
-): DirectionalView {
-  const sector = TAU / DIRECTIONAL_VIEWS.length;
+  views: readonly HorizontalDirectionalView[] = DIRECTIONAL_VIEWS,
+): HorizontalDirectionalView {
+  const sector = TAU / views.length;
   if (previous !== null) {
-    const center = DIRECTIONAL_VIEWS.indexOf(previous) * sector;
-    if (Math.abs(wrapAngle(angle - center)) <= sector / 2 + hysteresis) return previous;
+    const previousIndex = views.indexOf(previous);
+    if (previousIndex >= 0) {
+      const center = previousIndex * sector;
+      if (Math.abs(wrapAngle(angle - center)) <= sector / 2 + hysteresis) return previous;
+    }
   }
-  const count = DIRECTIONAL_VIEWS.length;
+  const count = views.length;
   const index = ((Math.round(angle / sector) % count) + count) % count;
-  return DIRECTIONAL_VIEWS[index];
+  return views[index];
 }

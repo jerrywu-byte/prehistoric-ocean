@@ -1,4 +1,4 @@
-import { DIRECTIONAL_LABELS } from './directional/types';
+import { getDirectionalLabel } from './directional/types';
 import * as THREE from 'three';
 import { Creature } from './Creature';
 import type { CreatureSpawnConfig } from './CreatureSpawnConfig';
@@ -67,6 +67,8 @@ export interface CreatureDebugState {
   readonly headingDelta?: number;
   readonly roamRadius?: number;
   readonly pauseRemaining?: number;
+  readonly sectorSizeDegrees?: number;
+  readonly missingAssetKeys?: readonly string[];
 }
 
 export class CreatureManager {
@@ -155,18 +157,18 @@ export class CreatureManager {
       textureUrl: species.directionalAssets.id,
       speciesId: species.id,
       creatureName: species.name.zhTW + ' / ' + species.name.en,
-      view: creature.view ? DIRECTIONAL_LABELS[creature.view] : '—',
+      view: creature.view ? getDirectionalLabel(creature.view) : '—',
       secondaryView: creature.secondaryDirectionalView
-        ? DIRECTIONAL_LABELS[creature.secondaryDirectionalView]
+        ? getDirectionalLabel(creature.secondaryDirectionalView)
         : 'NONE',
       horizontalBlend: creature.horizontalBlend,
-      horizontalTarget: DIRECTIONAL_LABELS[creature.horizontalTransition.target],
+      horizontalTarget: getDirectionalLabel(creature.horizontalTransition.target),
       transitionActive: creature.horizontalTransition.active,
       transitionProgress: creature.horizontalTransition.progress,
-      transitionSource: creature.horizontalTransition.source ? DIRECTIONAL_LABELS[creature.horizontalTransition.source] : 'NONE',
+      transitionSource: creature.horizontalTransition.source ? getDirectionalLabel(creature.horizontalTransition.source) : 'NONE',
       primaryOpacity: creature.object3d.material.opacity,
       secondaryOpacity: creature.secondaryObject3d.material.opacity,
-      previousView: creature.previousDirectionalView ? DIRECTIONAL_LABELS[creature.previousDirectionalView] : '—',
+      previousView: creature.previousDirectionalView ? getDirectionalLabel(creature.previousDirectionalView) : '—',
       directionIndex: creature.directionIndex,
       hysteresisDegrees: species.rendering.horizontalDirectionTransition.enabled
         ? species.rendering.horizontalDirectionTransition.hysteresisDegrees
@@ -186,7 +188,7 @@ export class CreatureManager {
       pitchThreshold: species.orientation.pitchLayerThresholdDegrees,
       pitchHysteresis: species.orientation.pitchLayerHysteresisDegrees,
       textureKey: (creature.currentPitchLayer ? creature.currentPitchLayer.toUpperCase() + '_' : '')
-        + DIRECTIONAL_LABELS[creature.view ?? 'front'],
+        + getDirectionalLabel(creature.view ?? 'front'),
       ambientMotionEnabled: species.movement.ambientMotion.enabled,
       anchorX: creature.anchorPosition.x,
       anchorY: creature.anchorPosition.y,
@@ -211,6 +213,8 @@ export class CreatureManager {
       roamRadius: creature.locomotion?.config.horizontalRoamRadius,
       pauseRemaining: creature.locomotion?.pauseRemainingSeconds,
       materialMode: creature.object3d.material.map ? 'TEXTURE' : 'FALLBACK',
+      sectorSizeDegrees: creature.sectorSizeDegrees,
+      missingAssetKeys: creature.missingAssetKeys.map(getDirectionalLabel),
     });
   }
 }

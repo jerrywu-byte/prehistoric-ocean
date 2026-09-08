@@ -48,7 +48,7 @@ export interface CreatureSpeciesDefinition {
   readonly defaultScale: { readonly width: number; readonly height: number };
   readonly rendering: {
     // Discriminator for future rendering implementations, not implemented here.
-    readonly mode: 'directional_8' | 'pitch_directional_8x3';
+    readonly mode: 'directional_8' | 'directional_16' | 'pitch_directional_8x3';
     readonly billboard: 'cylindrical' | 'constrainedPitch' | 'cameraFacing';
     readonly fallbackColor: number;
     readonly transparent: boolean;

@@ -1,14 +1,21 @@
 import { SRGBColorSpace, TextureLoader, type Texture } from 'three';
-import { DIRECTIONAL_VIEWS, type DirectionalTextureSet, type DirectionalView } from '../../creatures/directional/types';
+import {
+  DIRECTIONAL_VIEWS,
+  setMissingDirectionalViews,
+  type HorizontalDirectionalTextureSet,
+  type HorizontalDirectionalView,
+} from '../../creatures/directional/types';
 
 // An owned, complete eight-view set. Creature handles rejection with its normal fallback.
 export async function loadDirectionalPngTextures(
-  urls: Readonly<Record<DirectionalView, string>>,
-): Promise<DirectionalTextureSet> {
+  urls: Readonly<Record<string, string>>,
+  views: readonly HorizontalDirectionalView[] = DIRECTIONAL_VIEWS,
+  fallbackViews: Readonly<Partial<Record<HorizontalDirectionalView, HorizontalDirectionalView>>> = {},
+): Promise<HorizontalDirectionalTextureSet> {
   const loader = new TextureLoader();
   const owned: Texture[] = [];
-  const textures = {} as Record<DirectionalView, Texture>;
-  const results = await Promise.allSettled(DIRECTIONAL_VIEWS.map(view => new Promise<void>((resolve, reject) => {
+  const textures = {} as Record<HorizontalDirectionalView, Texture>;
+  const results = await Promise.allSettled(views.map(view => new Promise<void>((resolve, reject) => {
     const url = urls[view];
     owned.push(loader.load(url, loaded => {
       loaded.colorSpace = SRGBColorSpace;
@@ -16,10 +23,17 @@ export async function loadDirectionalPngTextures(
       resolve();
     }, undefined, cause => reject(new Error('Directional texture failed to load: ' + url, { cause }))));
   })));
-  const failure = results.find(result => result.status === 'rejected');
-  if (failure?.status === 'rejected') {
+  const missing = views.filter((_, index) => results[index].status === 'rejected');
+  const requiredFailure = missing.find(view => fallbackViews[view] === undefined);
+  if (requiredFailure !== undefined) {
     for (const texture of owned) texture.dispose();
-    throw failure.reason;
+    const failed = results[views.indexOf(requiredFailure)];
+    throw failed.status === 'rejected' ? failed.reason : new Error('Required directional texture missing');
   }
+  for (const view of missing) {
+    owned[views.indexOf(view)].dispose();
+    textures[view] = textures[fallbackViews[view]!];
+  }
+  setMissingDirectionalViews(textures, missing);
   return textures;
 }

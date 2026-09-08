@@ -1,6 +1,6 @@
 import { DoubleSide } from 'three';
 import type { CreatureSpeciesDefinition } from '../SpeciesDefinition';
-import { dunkleosteusAssets } from './dunkleosteusAssets';
+import { DUNKLEOSTEUS_DIRECTIONAL_MODE, dunkleosteusAssets } from './dunkleosteusAssets';
 
 // Directional stress fixture, not a complete second species or final artwork.
 export const dunkleosteusSpecies: CreatureSpeciesDefinition = {
@@ -10,7 +10,7 @@ export const dunkleosteusSpecies: CreatureSpeciesDefinition = {
   directionalAssets: dunkleosteusAssets,
   defaultScale: { width: 4.8, height: 2.4 },
   rendering: {
-    mode: 'directional_8',
+    mode: DUNKLEOSTEUS_DIRECTIONAL_MODE,
     billboard: 'cameraFacing',
     fallbackColor: 0xffa500,
     transparent: true,
@@ -20,7 +20,9 @@ export const dunkleosteusSpecies: CreatureSpeciesDefinition = {
     depthWrite: false,
     fog: true,
     toneMapped: false,
-    horizontalDirectionTransition: { enabled: true, durationMs: 140, hysteresisDegrees: 4 },
+    horizontalDirectionTransition: DUNKLEOSTEUS_DIRECTIONAL_MODE === 'directional_16'
+      ? { enabled: true, durationMs: 110, hysteresisDegrees: 2.5 }
+      : { enabled: true, durationMs: 140, hysteresisDegrees: 4 },
   },
   orientation: {
     defaultHeadingDegrees: 90,

@@ -1,11 +1,11 @@
-import type { DirectionalView } from './types';
+import type { HorizontalDirectionalView } from './types';
 
 /** Two-view, edge-triggered transition. No angle-dependent opacity. */
 export class TemporalDirectionTransition {
-  current: DirectionalView = 'front';
-  target: DirectionalView = 'front';
-  source: DirectionalView | null = null;
-  destination: DirectionalView | null = null;
+  current: HorizontalDirectionalView = 'front';
+  target: HorizontalDirectionalView = 'front';
+  source: HorizontalDirectionalView | null = null;
+  destination: HorizontalDirectionalView | null = null;
   elapsed = 0;
   initialized = false;
   constructor(readonly durationMs: number) {
@@ -14,7 +14,7 @@ export class TemporalDirectionTransition {
   get active(): boolean { return this.destination !== null; }
   get progress(): number { return this.active ? Math.min(1, this.elapsed / (this.durationMs / 1000)) : 0; }
   get blend(): number { const t = this.progress; return t * t * (3 - 2 * t); }
-  select(next: DirectionalView, immediate = false): void {
+  select(next: HorizontalDirectionalView, immediate = false): void {
     if (!this.initialized || immediate) {
       this.initialized = true;
       this.target = next;
@@ -35,7 +35,7 @@ export class TemporalDirectionTransition {
     this.elapsed += deltaSeconds;
     if (this.elapsed + 1e-12 >= this.durationMs / 1000) this.collapse(this.destination!);
   }
-  collapse(view: DirectionalView = this.destination ?? this.current): void {
+  collapse(view: HorizontalDirectionalView = this.destination ?? this.current): void {
     this.current = view;
     this.source = null;
     this.destination = null;

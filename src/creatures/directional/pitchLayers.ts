@@ -1,9 +1,9 @@
-import type { DirectionalTextureSet } from './types';
+import type { DirectionalTextureSet, HorizontalDirectionalTextureSet } from './types';
 
 export const PITCH_LAYERS = ['top', 'mid', 'bottom'] as const;
 export type PitchLayer = typeof PITCH_LAYERS[number];
 export type PitchDirectionalTextureSet = Readonly<Record<PitchLayer, DirectionalTextureSet>>;
-export type CreatureTextureSet = DirectionalTextureSet | PitchDirectionalTextureSet;
+export type CreatureTextureSet = HorizontalDirectionalTextureSet | PitchDirectionalTextureSet;
 
 // Degrees, measured from the horizontal plane; equality retains the current layer.
 export function getPitchLayer(

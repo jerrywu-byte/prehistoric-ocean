@@ -89,6 +89,8 @@ export function createPointerLockDebug(): PointerLockDebug {
         `Source: ${state.transitionSource ?? 'NONE'} | Destination / Secondary: ${state.secondaryView ?? 'NONE'}`,
         `Primary Opacity: ${(state.primaryOpacity ?? 1).toFixed(2)} | Secondary Opacity: ${(state.secondaryOpacity ?? 0).toFixed(2)}`,
         `Horizontal Hysteresis: ${state.hysteresisDegrees ?? '—'}°`,
+        `Sector Size: ${state.sectorSizeDegrees ?? '—'}°`,
+        `Missing Assets: ${state.missingAssetKeys?.length ? state.missingAssetKeys.join(', ') : 'NONE'}`,
         `Relative Horizontal Angle: ${(state.relativeAngle ?? 0).toFixed(1)}°`,
         `Creature Heading: ${(state.heading ?? 0).toFixed(1)}°`,
         `Distance: ${(state.distance ?? 0).toFixed(2)}`,
