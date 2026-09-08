@@ -5,7 +5,7 @@ import {
   type CreatureDebugState,
   type CreatureProximityState,
 } from '../creatures/CreatureManager';
-import { AMMONITE_SPAWN } from '../world/creatureSpawns';
+import { AMMONITE_SPAWN, DUNKLEOSTEUS_SPAWN } from '../world/creatureSpawns';
 import { createOceanEnvironment } from '../world/createOceanEnvironment';
 
 export class OceanApp {
@@ -84,6 +84,7 @@ export class OceanApp {
         this.onCreatureDebugChange,
       );
       this.creatureManager.spawnCreature(AMMONITE_SPAWN);
+      this.creatureManager.spawnCreature(DUNKLEOSTEUS_SPAWN);
     } catch (error) {
       this.disableCreatureSystem('initialization', error);
     }

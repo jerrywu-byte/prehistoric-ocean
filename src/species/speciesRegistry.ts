@@ -1,5 +1,6 @@
 import type { CreatureSpeciesDefinition } from './SpeciesDefinition';
 import { ammoniteSpecies } from './ammonite/ammoniteSpecies';
+import { dunkleosteusSpecies } from './dunkleosteus/dunkleosteusSpecies';
 
 export class SpeciesRegistry {
   private readonly definitions = new Map<string, CreatureSpeciesDefinition>();
@@ -21,7 +22,7 @@ export class SpeciesRegistry {
   }
 }
 
-export const speciesRegistry = new SpeciesRegistry([ammoniteSpecies]);
+export const speciesRegistry = new SpeciesRegistry([ammoniteSpecies, dunkleosteusSpecies]);
 
 export const getSpeciesById = (id: string): CreatureSpeciesDefinition => speciesRegistry.getSpeciesById(id);
 export const listAvailableSpecies = (): readonly CreatureSpeciesDefinition[] => speciesRegistry.listAvailableSpecies();
