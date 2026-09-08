@@ -100,12 +100,14 @@ export function createPointerLockDebug(): PointerLockDebug {
           `Pitch Threshold: ${state.pitchThreshold ?? '—'}°`,
           `Pitch Hysteresis: ${state.pitchHysteresis ?? '—'}°`,
           `Texture Key: ${state.textureKey ?? '—'}`,
-        ] : [
+        ] : state.billboardMode === 'YAW + LIMITED_PITCH' ? [
           `Target Pitch: ${(state.targetPitch ?? 0).toFixed(1)}°`,
           `Applied Pitch: ${(state.appliedPitch ?? 0).toFixed(1)}°`,
           `Pitch Limit: ${state.pitchLimit ?? '—'}°`,
           `Pitch Dead Zone: ${state.pitchDeadZone ?? '—'}°`,
           `Billboard Mode: ${state.billboardMode ?? '—'}`,
+        ] : [
+          `Pitch Layer: NONE | Billboard Mode: ${state.billboardMode ?? '—'}`,
         ]),
         '— Ambient —',
         `Ambient Motion: ${state.ambientMotionEnabled ? 'ON' : 'OFF'}`,

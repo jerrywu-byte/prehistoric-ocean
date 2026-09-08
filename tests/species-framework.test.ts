@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { SpeciesRegistry, getSpeciesById, listAvailableSpecies } from '../src/species/speciesRegistry';
 import { ammoniteSpecies } from '../src/species/ammonite/ammoniteSpecies';
+import { dunkleosteusSpecies } from '../src/species/dunkleosteus/dunkleosteusSpecies';
 import { Creature } from '../src/creatures/Creature';
 import { DIRECTIONAL_VIEWS, type DirectionalTextureSet } from '../src/creatures/directional/types';
 import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
 
 assert.equal(getSpeciesById('ammonite'), ammoniteSpecies);
-assert.deepEqual(listAvailableSpecies(), [ammoniteSpecies]);
+assert.deepEqual(listAvailableSpecies(), [ammoniteSpecies, dunkleosteusSpecies]);
 assert.throws(() => getSpeciesById('missing'), /Unknown species/);
 assert.throws(() => new SpeciesRegistry([ammoniteSpecies, ammoniteSpecies]), /Duplicate species/);
 assert.equal(ammoniteSpecies.behaviorProfile, 'gentle_drifter');

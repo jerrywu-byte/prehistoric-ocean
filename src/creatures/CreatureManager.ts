@@ -76,6 +76,8 @@ export class CreatureManager {
   private nearbyCreature: Creature | null = null;
   private disposed = false;
   private debugElapsed = 0;
+  private readonly viewDirection = new THREE.Vector3();
+  private readonly viewerOffset = new THREE.Vector3();
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -103,15 +105,23 @@ export class CreatureManager {
     for (const creature of this.creatures) creature.update(deltaSeconds, this.camera);
     let creature: Creature | undefined;
     let nearestDistance = Infinity;
+    let observed: Creature | undefined;
+    let bestAlignment = Math.cos(20 * Math.PI / 180);
+    this.camera.getWorldDirection(this.viewDirection);
     for (const candidate of this.creatures) {
       const distance = candidate.distanceSquaredTo(this.camera.position);
       if (distance < nearestDistance) { nearestDistance = distance; creature = candidate; }
+      // Debug follows the creature nearest the crosshair within a narrow viewing cone.
+      // Proximity still uses the nearest creature, independently of camera look.
+      this.viewerOffset.copy(candidate.object3d.position).sub(this.camera.position);
+      const alignment = distance > 0 ? this.viewerOffset.dot(this.viewDirection) / Math.sqrt(distance) : -1;
+      if (alignment > bestAlignment) { bestAlignment = alignment; observed = candidate; }
     }
     if (!creature) return;
     this.debugElapsed += deltaSeconds;
     if (this.debugElapsed >= 0.1) {
       this.debugElapsed = 0;
-      this.reportDebugState(creature);
+      this.reportDebugState(observed ?? creature);
     }
     const isNearby = creature.distanceSquaredTo(this.camera.position) <= creature.species.interaction.interactionDistance ** 2;
     if (isNearby !== this.wasNearby || (isNearby && this.nearbyCreature !== creature)) {
