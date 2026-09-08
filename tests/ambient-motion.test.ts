@@ -7,6 +7,7 @@ import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
 import { WORLD_LIMITS, getSeabedHeightAt } from '../src/world/worldLimits';
 
 const config=ammoniteSpecies.movement.ambientMotion;
+const ambientOnlySpecies={...ammoniteSpecies,movement:{...ammoniteSpecies.movement,enabled:false}};
 const offset=new THREE.Vector3();
 assert.equal(config.enabled,true);
 calculateAmbientMotionOffset(0,0,config,offset);
@@ -26,7 +27,7 @@ assert.notEqual(getDeterministicMotionPhase('ammonite-002'),getDeterministicMoti
 
 const geometry=new THREE.PlaneGeometry(1,1);
 const camera=new THREE.PerspectiveCamera();camera.position.set(0,3.2,10);
-const creature=new Creature(ammoniteSpecies,AMMONITE_SPAWN,geometry);
+const creature=new Creature(ambientOnlySpecies,AMMONITE_SPAWN,geometry);
 const anchor=creature.anchorPosition.clone();
 const scale=creature.object3d.scale.clone();
 const heading=creature.headingRadians;
@@ -39,7 +40,7 @@ assert.deepEqual(creature.object3d.scale.toArray(),scale.toArray());
 assert.equal(creature.headingRadians,heading);
 assert.equal(creature.object3d.rotation.z,0);
 // Replaying elapsed time on a fresh instance yields the same world position.
-const replay=new Creature(ammoniteSpecies,AMMONITE_SPAWN,geometry);
+const replay=new Creature(ambientOnlySpecies,AMMONITE_SPAWN,geometry);
 for(let index=0;index<600;index++) replay.update(1/60,camera);
 assert.ok(replay.object3d.position.distanceTo(afterTenSeconds)<1e-12);
 // Updating further recomputes anchor + bounded offset; it never adds the previous offset.
@@ -59,7 +60,7 @@ creature.update(0,camera);
 assert.equal(creature.currentPitchLayer,'top');
 
 // A boundary/seabed spawn remains inside the simple safety envelope.
-const edge=new Creature(ammoniteSpecies,{...AMMONITE_SPAWN,id:'edge',position:[WORLD_LIMITS.maxX, -10, WORLD_LIMITS.maxZ]},geometry);
+const edge=new Creature(ambientOnlySpecies,{...AMMONITE_SPAWN,id:'edge',position:[WORLD_LIMITS.maxX, -10, WORLD_LIMITS.maxZ]},geometry);
 for(let index=0;index<600;index++) edge.update(1/60,camera);
 assert.ok(edge.object3d.position.x<=WORLD_LIMITS.maxX-edge.object3d.scale.x/2);
 assert.ok(edge.object3d.position.z<=WORLD_LIMITS.maxZ-edge.object3d.scale.x/2);

@@ -16,6 +16,23 @@ export interface AmbientMotionDefinition {
   readonly driftZPeriodSeconds: number;
 }
 
+export type LocomotionDefinition =
+  | { readonly enabled: false; readonly mode: 'none' }
+  | {
+      readonly enabled: true;
+      readonly mode: 'gentle_roam';
+      readonly horizontalRoamRadius: number;
+      readonly cruiseSpeed: number;
+      readonly acceleration: number;
+      readonly deceleration: number;
+      readonly slowdownRadius: number;
+      readonly arrivalRadius: number;
+      readonly maxTurnRateDegreesPerSecond: number;
+      readonly minimumTargetDistance: number;
+      readonly pauseMinSeconds: number;
+      readonly pauseMaxSeconds: number;
+    };
+
 // Each load returns an owned set. Caller disposes every unique texture.
 // The same contract accepts synchronous Canvas or asynchronous image providers.
 export interface DirectionalAssetSource {
@@ -57,8 +74,9 @@ export interface CreatureSpeciesDefinition {
     readonly minimumObservationDistance: number;
   };
   readonly movement: {
-    // Active locomotion/swimming remains a future capability.
+    // Active locomotion and local ambient displacement remain independent.
     readonly enabled: boolean;
+    readonly locomotion: LocomotionDefinition;
     readonly ambientMotion: AmbientMotionDefinition;
   };
   readonly animation: { readonly enabled: boolean; readonly framesPerDirection: number };

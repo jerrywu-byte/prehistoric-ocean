@@ -47,6 +47,18 @@ export interface CreatureDebugState {
   readonly motionOffsetX?: number;
   readonly motionOffsetY?: number;
   readonly motionOffsetZ?: number;
+  readonly locomotionState?: 'MOVING' | 'PAUSED' | 'OFF';
+  readonly locomotionX?: number;
+  readonly locomotionY?: number;
+  readonly locomotionZ?: number;
+  readonly targetX?: number;
+  readonly targetZ?: number;
+  readonly distanceToTarget?: number;
+  readonly speed?: number;
+  readonly targetHeading?: number;
+  readonly headingDelta?: number;
+  readonly roamRadius?: number;
+  readonly pauseRemaining?: number;
 }
 
 export class CreatureManager {
@@ -152,6 +164,22 @@ export class CreatureManager {
       motionOffsetX: creature.motionOffset.x,
       motionOffsetY: creature.motionOffset.y,
       motionOffsetZ: creature.motionOffset.z,
+      locomotionState: creature.locomotion?.state ?? 'OFF',
+      locomotionX: creature.locomotionPosition.x,
+      locomotionY: creature.locomotionPosition.y,
+      locomotionZ: creature.locomotionPosition.z,
+      targetX: creature.locomotion?.target.x,
+      targetZ: creature.locomotion?.target.z,
+      distanceToTarget: creature.locomotion?.distanceToTarget,
+      speed: creature.locomotion?.speed,
+      targetHeading: creature.locomotion
+        ? THREE.MathUtils.radToDeg(creature.locomotion.targetHeadingRadians)
+        : undefined,
+      headingDelta: creature.locomotion
+        ? THREE.MathUtils.radToDeg(creature.locomotion.headingDeltaRadians)
+        : undefined,
+      roamRadius: creature.locomotion?.config.horizontalRoamRadius,
+      pauseRemaining: creature.locomotion?.pauseRemainingSeconds,
       materialMode: creature.object3d.material.map ? 'TEXTURE' : 'FALLBACK',
     });
   }

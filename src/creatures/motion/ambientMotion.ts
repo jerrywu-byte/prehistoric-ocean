@@ -1,15 +1,11 @@
 import * as THREE from 'three';
 import type { AmbientMotionDefinition } from '../../species/SpeciesDefinition';
+import { hashString } from './deterministicRandom';
 
 const TAU = Math.PI * 2;
 
 export function getDeterministicMotionPhase(instanceId: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < instanceId.length; index += 1) {
-    hash ^= instanceId.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return ((hash >>> 0) / 0x100000000) * TAU;
+  return (hashString(instanceId) / 0x100000000) * TAU;
 }
 
 export function calculateAmbientMotionOffset(

@@ -15,6 +15,7 @@ const ammoniteSpecies = {
   },
   movement: {
     ...productionSpecies.movement,
+    enabled:false,
     ambientMotion: {...productionSpecies.movement.ambientMotion,enabled:false},
   },
 };

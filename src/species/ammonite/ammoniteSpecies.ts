@@ -32,7 +32,21 @@ export const ammoniteSpecies: CreatureSpeciesDefinition = {
   },
   interaction: { interactionDistance: 6, minimumObservationDistance: 2.25 },
   movement: {
-    enabled: false,
+    enabled: true,
+    locomotion: {
+      enabled: true,
+      mode: 'gentle_roam',
+      horizontalRoamRadius: 3.5,
+      cruiseSpeed: 0.26,
+      acceleration: 0.16,
+      deceleration: 0.22,
+      slowdownRadius: 0.9,
+      arrivalRadius: 0.18,
+      maxTurnRateDegreesPerSecond: 24,
+      minimumTargetDistance: 1.2,
+      pauseMinSeconds: 1.2,
+      pauseMaxSeconds: 2.8,
+    },
     ambientMotion: {
       enabled: true,
       verticalAmplitude: 0.16,

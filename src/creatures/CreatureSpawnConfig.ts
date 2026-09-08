@@ -11,6 +11,8 @@ export interface CreatureSpawnConfig {
   readonly scaleMultiplier?: number;
   // Radians. When omitted, a stable phase is derived from the instance ID.
   readonly motionPhase?: number;
-  // Reserved instance metadata; neither drives behavior in this phase.
+  // Optional deterministic locomotion seed. Defaults to species ID + instance ID.
+  readonly locomotionSeed?: number;
+  // Reserved instance metadata for future runtime state extensions.
   readonly initialState?: { readonly speedMultiplier?: number; readonly status?: string };
 }

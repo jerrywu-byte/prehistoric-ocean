@@ -5,6 +5,7 @@ import { CreatureManager } from '../src/creatures/CreatureManager';
 import { ammoniteSpecies } from '../src/species/ammonite/ammoniteSpecies';
 import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
 import { DIRECTIONAL_VIEWS, DIRECTIONAL_LABELS } from '../src/creatures/directional/types';
+import { SpeciesRegistry } from '../src/species/speciesRegistry';
 const rad = (degrees: number) => degrees * Math.PI / 180;
 const views = DIRECTIONAL_VIEWS;
 const h = rad(ammoniteSpecies.orientation.directionalHysteresisDegrees);
@@ -49,8 +50,9 @@ const camera = new THREE.PerspectiveCamera();
 camera.position.set(0,3.2,10);
 const states: any[] = [];
 const proximity: any[] = [];
+const staticSpecies={...ammoniteSpecies,movement:{...ammoniteSpecies.movement,enabled:false}};
 const manager = new CreatureManager(scene, camera,
-  s=>proximity.push(s), s=>states.push(s));
+  s=>proximity.push(s), s=>states.push(s),new SpeciesRegistry([staticSpecies]));
 const creature = manager.spawnCreature(AMMONITE_SPAWN);
 await new Promise(resolve => setTimeout(resolve, 0));
 const mesh = scene.children[0] as THREE.Mesh<THREE.PlaneGeometry,THREE.MeshBasicMaterial>;

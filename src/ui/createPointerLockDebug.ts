@@ -81,6 +81,7 @@ export function createPointerLockDebug(): PointerLockDebug {
     },
     setCreatureState(state: CreatureDebugState): void {
       directionInfo.textContent = [
+        '— Rendering —',
         `Species ID: ${state.speciesId ?? '—'}`,
         `Creature Name: ${state.creatureName ?? '—'}`,
         `Horizontal View: ${state.view ?? '—'}`,
@@ -105,10 +106,19 @@ export function createPointerLockDebug(): PointerLockDebug {
           `Pitch Dead Zone: ${state.pitchDeadZone ?? '—'}°`,
           `Billboard Mode: ${state.billboardMode ?? '—'}`,
         ]),
+        '— Ambient —',
         `Ambient Motion: ${state.ambientMotionEnabled ? 'ON' : 'OFF'}`,
-        `Anchor: ${(state.anchorX ?? 0).toFixed(2)} / ${(state.anchorY ?? 0).toFixed(2)} / ${(state.anchorZ ?? 0).toFixed(2)}`,
-        `Motion Offset: ${(state.motionOffsetX ?? 0).toFixed(2)} / ${(state.motionOffsetY ?? 0).toFixed(2)} / ${(state.motionOffsetZ ?? 0).toFixed(2)}`,
+        `Ambient Offset: ${(state.motionOffsetX ?? 0).toFixed(2)} / ${(state.motionOffsetY ?? 0).toFixed(2)} / ${(state.motionOffsetZ ?? 0).toFixed(2)}`,
         `Vertical Bob: ${(state.motionOffsetY ?? 0) >= 0 ? '+' : ''}${(state.motionOffsetY ?? 0).toFixed(2)}`,
+        '— Locomotion —',
+        `Locomotion: ${state.locomotionState ?? 'OFF'}`,
+        `Home: ${(state.anchorX ?? 0).toFixed(2)} / ${(state.anchorY ?? 0).toFixed(2)} / ${(state.anchorZ ?? 0).toFixed(2)}`,
+        `Locomotion Position: ${(state.locomotionX ?? 0).toFixed(2)} / ${(state.locomotionY ?? 0).toFixed(2)} / ${(state.locomotionZ ?? 0).toFixed(2)}`,
+        `Target X/Z: ${(state.targetX ?? 0).toFixed(2)} / ${(state.targetZ ?? 0).toFixed(2)}`,
+        `Target Distance / Speed: ${(state.distanceToTarget ?? 0).toFixed(2)} / ${(state.speed ?? 0).toFixed(2)}`,
+        `Target Heading / Delta: ${(state.targetHeading ?? 0).toFixed(1)}° / ${(state.headingDelta ?? 0).toFixed(1)}°`,
+        `Roam Radius: ${(state.roamRadius ?? 0).toFixed(1)}`,
+        `Pause Remaining: ${(state.pauseRemaining ?? 0).toFixed(1)} sec`,
       ].join('\n');
       creatureCount.textContent = `Creature Count: ${state.count}`;
       creatureVisible.textContent = `Creature Visible: ${state.visible ? 'YES' : 'NO'}`;

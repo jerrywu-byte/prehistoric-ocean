@@ -5,6 +5,8 @@ import { DIRECTIONAL_VIEWS, DIRECTIONAL_LABELS } from '../src/creatures/directio
 import { AMMONITE_TEXTURE_URLS } from '../src/species/ammonite/ammoniteAssets';
 import { CreatureManager } from '../src/creatures/CreatureManager';
 import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
+import { ammoniteSpecies } from '../src/species/ammonite/ammoniteSpecies';
+import { SpeciesRegistry } from '../src/species/speciesRegistry';
 const select=(angle:number,previous:PitchLayer|null)=>getPitchLayer(angle,previous,20,5);
 assert.equal(select(21,null),'top');
 assert.equal(select(-21,null),'bottom');
@@ -36,7 +38,9 @@ camera.position.set(0,3.2,10);
 const scene=new THREE.Scene();
 const debug:any[]=[];
 const proximity:any[]=[];
-const manager=new CreatureManager(scene,camera,s=>proximity.push(s),s=>debug.push(s));
+const staticSpecies={...ammoniteSpecies,movement:{...ammoniteSpecies.movement,enabled:false}};
+const staticRegistry=new SpeciesRegistry([staticSpecies]);
+const manager=new CreatureManager(scene,camera,s=>proximity.push(s),s=>debug.push(s),staticRegistry);
 const creature=manager.spawnCreature(AMMONITE_SPAWN);
 await new Promise(resolve=>setTimeout(resolve,0));
 const mesh=creature.object3d;
@@ -92,7 +96,7 @@ assert.ok(mesh.quaternion.toArray().every(Number.isFinite));
 manager.dispose();
 for(const height of [20,-20]){
  const cam=new THREE.PerspectiveCamera();cam.position.set(0,3.2+height,2);
- const m=new CreatureManager(new THREE.Scene(),cam,()=>{},()=>{});
+ const m=new CreatureManager(new THREE.Scene(),cam,()=>{},()=>{},staticRegistry);
  const c=m.spawnCreature(AMMONITE_SPAWN);
  assert.equal(c.currentPitchLayer,height>0?'top':'bottom');
  assert.equal(c.view,'front');

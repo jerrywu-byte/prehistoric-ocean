@@ -119,3 +119,28 @@ that final displayed position rather than the anchor. The calculations reuse vec
 Creature and do not allocate objects in the per-frame path. Debug exposes the anchor, applied
 motion offset, current position and vertical bob. This remains ambient display motion only; no
 swimming, steering, behavior AI or spawn mutation is implemented.
+
+## v0.5.1 gentle horizontal roaming
+
+Movement capability now contains a locomotion discriminator alongside ambientMotion.
+Ammonite enables gentle_roam with a 3.5-unit home radius, 0.26 units/second cruise speed,
+0.16 acceleration, 0.22 deceleration, a 0.9 slowdown radius and 0.18 arrival radius.
+It turns at no more than 24 degrees/second. Target points must be at least 1.2 units from
+the previous position; arrival pauses are deterministically selected from 1.2–2.8 seconds.
+
+Creature position is explicitly split into the immutable spawn home, a locomotion base
+position, and the independent ambient offset. The rendered position is recomputed from
+locomotion plus ambient on every frame before the existing world/seabed safety clamp.
+Locomotion changes X/Z only; Y remains the home base. Scale and roll are untouched.
+
+gentleRoam owns a seeded PRNG derived from species ID and instance ID (or an explicit spawn
+seed). Candidate waypoints use varying angles and area-weighted radii inside the home circle,
+reject near/out-of-bounds candidates, and have a deterministic bounded fallback. No Math.random
+or fixed polygon/circular route is used. MOVING applies delta-time speed and shortest-arc heading
+turns; PAUSED keeps locomotion fixed while ambient motion continues.
+
+Desired speed decreases inside the slowdown radius and with heading error. Full speed is allowed
+within 25 degrees, reduced through 60 degrees, and reaches zero above 100 degrees so the creature
+turns before translating instead of visibly side-slipping. Horizontal Sprite view continues to use
+camera position relative to the now-current heading; pitch layer, proximity and billboard orientation
+use the final current rendered position. Debug groups rendering, ambient and locomotion state.
