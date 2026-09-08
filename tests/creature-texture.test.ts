@@ -33,6 +33,7 @@ async function check(url: string, success: boolean) {
   const states: any[] = [];
   const registry = new SpeciesRegistry([{...ammoniteSpecies,
     rendering: {...ammoniteSpecies.rendering, mode: 'directional_8', billboard: 'cylindrical'},
+    movement: {...ammoniteSpecies.movement, ambientMotion: {...ammoniteSpecies.movement.ambientMotion, enabled: false}},
     directionalAssets: {id: url, load: async () => {
       const texture = await new THREE.TextureLoader().loadAsync(url);
       texture.colorSpace = THREE.SRGBColorSpace;

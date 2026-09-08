@@ -70,7 +70,7 @@ try {
         assert.equal(mesh.material.map, null);
       }
       for (let i=0;i<120;i++) manager.update(1/60);
-      assert.deepEqual(mesh.position.toArray(), [0,3.2,2]);
+      assert.ok(mesh.position.distanceTo(new THREE.Vector3(0,3.2,2)) < .25);
       manager.dispose();
     }
     assert.equal(disposals.size, 24);

@@ -79,7 +79,7 @@ for(const [elevation,layer] of [[0,'mid'],[40,'top'],[0,'mid'],[-40,'bottom']] a
 }
 // Exact poles always pick their layer, even on first update; coincident camera remains finite.
 for(const [height,layer] of [[20,'top'],[-20,'bottom']] as const){
-  camera.position.set(0,3.2+height,2);manager.update(.1);
+  camera.position.set(mesh.position.x,mesh.position.y+height,mesh.position.z);manager.update(0);
   assert.equal(creature.currentPitchLayer,layer);
   assert.ok(mesh.quaternion.toArray().every(Number.isFinite));
   normal.set(0,0,1).applyQuaternion(mesh.quaternion);

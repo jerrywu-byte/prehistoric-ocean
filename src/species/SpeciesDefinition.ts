@@ -6,6 +6,16 @@ export type BehaviorProfile =
   | 'gentle_drifter' | 'active_swimmer' | 'schooling_fish'
   | 'large_predator' | 'seabed_crawler';
 
+export interface AmbientMotionDefinition {
+  readonly enabled: boolean;
+  readonly verticalAmplitude: number;
+  readonly verticalPeriodSeconds: number;
+  readonly driftXAmplitude: number;
+  readonly driftXPeriodSeconds: number;
+  readonly driftZAmplitude: number;
+  readonly driftZPeriodSeconds: number;
+}
+
 // Each load returns an owned set. Caller disposes every unique texture.
 // The same contract accepts synchronous Canvas or asynchronous image providers.
 export interface DirectionalAssetSource {
@@ -46,8 +56,11 @@ export interface CreatureSpeciesDefinition {
     readonly interactionDistance: number;
     readonly minimumObservationDistance: number;
   };
-  // Capability metadata only; no runtime movement, animation or AI.
-  readonly movement: { readonly enabled: boolean };
+  readonly movement: {
+    // Active locomotion/swimming remains a future capability.
+    readonly enabled: boolean;
+    readonly ambientMotion: AmbientMotionDefinition;
+  };
   readonly animation: { readonly enabled: boolean; readonly framesPerDirection: number };
   readonly behaviorProfile: BehaviorProfile;
   readonly spawnDefaults: { readonly scaleMultiplier: number };

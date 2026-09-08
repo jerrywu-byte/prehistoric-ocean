@@ -40,6 +40,13 @@ export interface CreatureDebugState {
   readonly pitchThreshold?: number;
   readonly pitchHysteresis?: number;
   readonly textureKey?: string;
+  readonly ambientMotionEnabled?: boolean;
+  readonly anchorX?: number;
+  readonly anchorY?: number;
+  readonly anchorZ?: number;
+  readonly motionOffsetX?: number;
+  readonly motionOffsetY?: number;
+  readonly motionOffsetZ?: number;
 }
 
 export class CreatureManager {
@@ -138,6 +145,13 @@ export class CreatureManager {
       pitchHysteresis: species.orientation.pitchLayerHysteresisDegrees,
       textureKey: (creature.currentPitchLayer ? creature.currentPitchLayer.toUpperCase() + '_' : '')
         + DIRECTIONAL_LABELS[creature.view ?? 'front'],
+      ambientMotionEnabled: species.movement.ambientMotion.enabled,
+      anchorX: creature.anchorPosition.x,
+      anchorY: creature.anchorPosition.y,
+      anchorZ: creature.anchorPosition.z,
+      motionOffsetX: creature.motionOffset.x,
+      motionOffsetY: creature.motionOffset.y,
+      motionOffsetZ: creature.motionOffset.z,
       materialMode: creature.object3d.material.map ? 'TEXTURE' : 'FALLBACK',
     });
   }

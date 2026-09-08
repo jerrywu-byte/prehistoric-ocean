@@ -53,7 +53,7 @@ export function createPointerLockDebug(): PointerLockDebug {
   camera.textContent = 'Camera: 0.00 / 0.00 / 0.00';
   creatureCount.textContent = 'Creature Count: 0';
   creatureVisible.textContent = 'Creature Visible: NO';
-  creaturePosition.textContent = 'Creature Position:';
+  creaturePosition.textContent = 'Current Position:';
   creaturePositionX.textContent = 'X: 0.00';
   creaturePositionY.textContent = 'Y: 0.00';
   creaturePositionZ.textContent = 'Z: 0.00';
@@ -105,6 +105,10 @@ export function createPointerLockDebug(): PointerLockDebug {
           `Pitch Dead Zone: ${state.pitchDeadZone ?? '—'}°`,
           `Billboard Mode: ${state.billboardMode ?? '—'}`,
         ]),
+        `Ambient Motion: ${state.ambientMotionEnabled ? 'ON' : 'OFF'}`,
+        `Anchor: ${(state.anchorX ?? 0).toFixed(2)} / ${(state.anchorY ?? 0).toFixed(2)} / ${(state.anchorZ ?? 0).toFixed(2)}`,
+        `Motion Offset: ${(state.motionOffsetX ?? 0).toFixed(2)} / ${(state.motionOffsetY ?? 0).toFixed(2)} / ${(state.motionOffsetZ ?? 0).toFixed(2)}`,
+        `Vertical Bob: ${(state.motionOffsetY ?? 0) >= 0 ? '+' : ''}${(state.motionOffsetY ?? 0).toFixed(2)}`,
       ].join('\n');
       creatureCount.textContent = `Creature Count: ${state.count}`;
       creatureVisible.textContent = `Creature Visible: ${state.visible ? 'YES' : 'NO'}`;

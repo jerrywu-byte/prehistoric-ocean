@@ -5,4 +5,5 @@ export const AMMONITE_SPAWN: CreatureSpawnConfig = {
   speciesId: 'ammonite',
   position: [0, 3.2, 2],
   headingDegrees: 90,
+  motionPhase: 0,
 };

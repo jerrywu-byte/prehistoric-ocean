@@ -39,3 +39,10 @@ export function constrainDiverPosition(
     velocity.y = 0;
   }
 }
+
+export function constrainCreaturePosition(position: THREE.Vector3, halfWidth: number, halfHeight: number): void {
+  position.x = THREE.MathUtils.clamp(position.x, WORLD_LIMITS.minX + halfWidth, WORLD_LIMITS.maxX - halfWidth);
+  position.z = THREE.MathUtils.clamp(position.z, WORLD_LIMITS.minZ + halfWidth, WORLD_LIMITS.maxZ - halfWidth);
+  const minimumY = getSeabedHeightAt(position.x, position.z) + Math.max(0, halfHeight);
+  position.y = THREE.MathUtils.clamp(position.y, minimumY, WORLD_LIMITS.maxY);
+}

@@ -8,7 +8,7 @@ Creature holds the registry's shared, readonly definition reference, never a cop
 - `src/species/ammonite/`: ammonite definition, standard asset provider and PNG loader (with the previous Canvas drawing retained but inactive).
 - `src/species/speciesRegistry.ts`: register definitions once; lookup rejects unknown IDs and duplicates.
 - `src/creatures/CreatureSpawnConfig.ts`: instance ID, species ID, position, optional heading,
-  scale override and multiplier. Reserved instance state has no behavior implementation.
+  scale override/multiplier and optional deterministic ambient-motion phase.
 - `src/world/creatureSpawns.ts`: the single scene spawn at (0, 3.2, 2).
 
 To add a species later, supply a definition and asset provider, register it, then pass
@@ -24,7 +24,7 @@ Loading or failure keeps an orange fallback; provider errors are logged and expo
 
 Ammonite uses eight PNG assets under public/assets/creatures/ammonite/, 3.2 × 2 dimensions, heading 90° (+Z),
 5° hysteresis, interaction distance 6 and minimum observation distance 2.25.
-Movement/animation remain disabled, one frame per direction; gentle_drifter is metadata only.
+Active locomotion and animation remain disabled, one frame per direction; gentle_drifter is metadata only.
 Position belongs to the spawn, not the species. An omitted heading uses the species default.
 Scale override replaces dimensions; the multiplier applies afterwards (default 1).
 No AI, movement or animation runners are implemented.
@@ -99,3 +99,23 @@ Debug shows rendering mode, horizontal view, pitch layer, vertical angle, thresh
 hysteresis, texture key and READY/ERROR/FALLBACK. Limited-pitch fields are hidden for this mode.
 Node tests use image-event adapters; PNG decode/build-copy checks are separate.
 Program validation does not constitute Windows Chrome visual acceptance.
+
+## v0.5.0 ambient life motion
+
+Movement capability now separates optional ambient motion from future active locomotion.
+Ammonite keeps active movement disabled and enables a species-owned ambient profile: vertical
+amplitude 0.16 over 5.5 seconds, X drift 0.14 over 8 seconds and Z drift 0.10 over 6.7 seconds.
+The differing periods and phase multipliers avoid a simple circular track.
+
+Each Creature preserves its spawn position as a readonly home anchor. Every update recomputes
+the display position as anchor plus a pure sinusoidal offset; offsets never accumulate.
+An explicit spawn motionPhase is used when present. Otherwise a stable FNV-1a hash of the
+instance ID produces a reproducible phase, so future instances need not move in sync.
+Scale, heading and roll are not animated.
+
+The displayed position is constrained to the existing world bounds and to one scaled half-height
+above the analytical seabed. Directional and pitch-layer selection, distance and proximity all use
+that final displayed position rather than the anchor. The calculations reuse vectors owned by the
+Creature and do not allocate objects in the per-frame path. Debug exposes the anchor, applied
+motion offset, current position and vertical bob. This remains ambient display motion only; no
+swimming, steering, behavior AI or spawn mutation is implemented.

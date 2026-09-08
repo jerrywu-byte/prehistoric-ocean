@@ -4,12 +4,18 @@ import type { CreatureSpeciesDefinition } from '../species/SpeciesDefinition';
 import { PITCH_LAYERS, getPitchLayer, isPitchTextureSet, type CreatureTextureSet, type PitchLayer } from './directional/pitchLayers';
 import type { CreatureSpawnConfig } from './CreatureSpawnConfig';
 import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle, type DirectionalView } from './directional/getDirectionalView';
+import { calculateAmbientMotionOffset, getDeterministicMotionPhase } from './motion/ambientMotion';
+import { constrainCreaturePosition } from '../world/worldLimits';
 
 export class Creature {
   readonly object3d: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   readonly headingRadians: number;
+  readonly anchorPosition = new THREE.Vector3();
+  readonly motionOffset = new THREE.Vector3();
+  readonly motionPhase: number;
   private directionalTextures: CreatureTextureSet | null = null;
   private disposed = false;
+  private motionElapsedSeconds = 0;
   currentDirectionalView: DirectionalView | null = null;
   currentPitchLayer: PitchLayer | null = null;
   previousDirectionalView: DirectionalView | null = null;
@@ -33,7 +39,8 @@ export class Creature {
     const scale = spawn.scaleOverride ?? [species.defaultScale.width, species.defaultScale.height, 1];
     const heading = spawn.headingDegrees ?? species.orientation.defaultHeadingDegrees;
     const multiplier = spawn.scaleMultiplier ?? species.spawnDefaults.scaleMultiplier;
-    if (!spawn.position.every(Number.isFinite) || !Number.isFinite(heading) ||
+    const motionPhase = spawn.motionPhase ?? getDeterministicMotionPhase(spawn.id);
+    if (!spawn.position.every(Number.isFinite) || !Number.isFinite(heading) || !Number.isFinite(motionPhase) ||
         !scale.every(v => Number.isFinite(v) && v > 0) || !Number.isFinite(multiplier) || multiplier <= 0) {
       throw new Error('Invalid creature spawn transform: ' + spawn.id);
     }
@@ -45,8 +52,10 @@ export class Creature {
     this.object3d = new THREE.Mesh(geometry, material);
     this.object3d.name = spawn.id;
     this.object3d.position.set(...spawn.position);
+    this.anchorPosition.copy(this.object3d.position);
     this.object3d.scale.set(scale[0] * multiplier, scale[1] * multiplier, scale[2] * multiplier);
     this.headingRadians = THREE.MathUtils.degToRad(heading);
+    this.motionPhase = motionPhase;
   }
 
   initializeAssets(onChange: () => void): void {
@@ -86,6 +95,17 @@ export class Creature {
   }
 
   update(deltaSeconds: number, camera: THREE.Camera): void {
+    if (Number.isFinite(deltaSeconds) && deltaSeconds > 0) this.motionElapsedSeconds += deltaSeconds;
+    calculateAmbientMotionOffset(
+      this.motionElapsedSeconds,
+      this.motionPhase,
+      this.species.movement.ambientMotion,
+      this.motionOffset,
+    );
+    this.object3d.position.copy(this.anchorPosition).add(this.motionOffset);
+    constrainCreaturePosition(this.object3d.position, this.object3d.scale.x * 0.5, this.object3d.scale.y * 0.5);
+    this.motionOffset.copy(this.object3d.position).sub(this.anchorPosition);
+
     const dx = camera.position.x - this.object3d.position.x;
     const dz = camera.position.z - this.object3d.position.z;
     this.distance = camera.position.distanceTo(this.object3d.position);

@@ -6,8 +6,18 @@ import { AMMONITE_SPAWN } from '../src/world/creatureSpawns';
 import { DIRECTIONAL_VIEWS } from '../src/creatures/directional/types';
 import { getTargetPitch, smoothPitch } from '../src/creatures/directional/constrainedPitch';
 
-const ammoniteSpecies = {...productionSpecies, rendering: {...productionSpecies.rendering,
-  mode: 'directional_8' as const, billboard: 'constrainedPitch' as const}};
+const ammoniteSpecies = {
+  ...productionSpecies,
+  rendering: {
+    ...productionSpecies.rendering,
+    mode: 'directional_8' as const,
+    billboard: 'constrainedPitch' as const,
+  },
+  movement: {
+    ...productionSpecies.movement,
+    ambientMotion: {...productionSpecies.movement.ambientMotion,enabled:false},
+  },
+};
 const rad = THREE.MathUtils.degToRad;
 const config = ammoniteSpecies.orientation;
 const close = (a:number,b:number) => assert.ok(Math.abs(a-b)<1e-9, `${a} != ${b}`);

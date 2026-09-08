@@ -9,6 +9,8 @@ export interface CreatureSpawnConfig {
   // Override replaces species dimensions; multiplier is applied afterwards.
   readonly scaleOverride?: Vector3Tuple;
   readonly scaleMultiplier?: number;
+  // Radians. When omitted, a stable phase is derived from the instance ID.
+  readonly motionPhase?: number;
   // Reserved instance metadata; neither drives behavior in this phase.
   readonly initialState?: { readonly speedMultiplier?: number; readonly status?: string };
 }
