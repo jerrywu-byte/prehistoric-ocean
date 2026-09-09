@@ -41,9 +41,10 @@ for(const view of DIRECTIONAL_16_VIEWS) {
 const pending:Array<{url:string;finish:(success:boolean)=>void}>=[];
 class ImageAdapter {
   listeners=new Map<string,()=>void>();
+  currentSrc='';width=1254;height=1254;
   addEventListener(type:string,fn:()=>void){this.listeners.set(type,fn);}
   removeEventListener(type:string){this.listeners.delete(type);}
-  set src(url:string){pending.push({url,finish:ok=>this.listeners.get(ok?'load':'error')?.call(this)});}
+  set src(url:string){this.currentSrc=url;pending.push({url,finish:ok=>this.listeners.get(ok?'load':'error')?.call(this)});}
 }
 Object.assign(globalThis,{document:{createElementNS:()=>new ImageAdapter()}});
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
@@ -73,6 +74,13 @@ try {
   assert.equal(debug.missingAssetKeys?.length,0);
   assert.equal(debug.textureStatus,'YES');
   assert.equal(debug.materialMode,'TEXTURE');
+  assert.equal(debug.currentTextureKey,'dunkleosteus_mid_front');
+  assert.equal(debug.currentTextureUrl,DUNKLEOSTEUS_TEXTURE_URLS.front);
+  assert.equal(debug.textureNativeWidth,1254);assert.equal(debug.textureNativeHeight,1254);
+  assert.equal(debug.textureAspect,1);
+  assert.equal(debug.planeGeometryWidth,1);assert.equal(debug.planeGeometryHeight,1);
+  assert.equal(debug.meshScaleX,4.8);assert.equal(debug.meshScaleY,4.8);
+  assert.equal(debug.finalDisplayAspect,1);
   const maps=new Set<THREE.Texture>();
   for(let index=0;index<16;index++) {
     const angle=index*Math.PI/8;

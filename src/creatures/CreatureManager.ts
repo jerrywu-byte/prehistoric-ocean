@@ -65,10 +65,31 @@ export interface CreatureDebugState {
   readonly speed?: number;
   readonly targetHeading?: number;
   readonly headingDelta?: number;
+  readonly turnDirection?: 'LEFT' | 'RIGHT' | 'ALIGNED';
+  readonly maxTurnRateDegreesPerSecond?: number;
   readonly roamRadius?: number;
   readonly pauseRemaining?: number;
   readonly sectorSizeDegrees?: number;
   readonly missingAssetKeys?: readonly string[];
+  readonly currentTextureKey?: string;
+  readonly currentTextureUrl?: string;
+  readonly textureNativeWidth?: number;
+  readonly textureNativeHeight?: number;
+  readonly textureAspect?: number;
+  readonly planeGeometryWidth?: number;
+  readonly planeGeometryHeight?: number;
+  readonly meshScaleX?: number;
+  readonly meshScaleY?: number;
+  readonly finalDisplayAspect?: number;
+}
+
+interface TextureImageDiagnostics {
+  readonly currentSrc?: string;
+  readonly src?: string;
+  readonly naturalWidth?: number;
+  readonly naturalHeight?: number;
+  readonly width?: number;
+  readonly height?: number;
 }
 
 export class CreatureManager {
@@ -149,6 +170,16 @@ export class CreatureManager {
   private reportDebugState(creature: Creature): void {
     if (!creature) return;
     const species = creature.species;
+    const materialTexture = creature.object3d.material.map;
+    const textureImage = materialTexture?.image as TextureImageDiagnostics | undefined;
+    const currentTextureUrl = textureImage?.currentSrc || textureImage?.src || '';
+    const textureFilename = currentTextureUrl.split(/[?#]/)[0].split('/').pop() ?? '';
+    const textureNativeWidth = textureImage?.naturalWidth || textureImage?.width || 0;
+    const textureNativeHeight = textureImage?.naturalHeight || textureImage?.height || 0;
+    const geometryWidth = creature.object3d.geometry.parameters.width;
+    const geometryHeight = creature.object3d.geometry.parameters.height;
+    const finalWidth = geometryWidth * creature.object3d.scale.x;
+    const finalHeight = geometryHeight * creature.object3d.scale.y;
     this.onDebugChange({
       count: this.creatures.length,
       visible: creature.object3d.visible,
@@ -210,11 +241,30 @@ export class CreatureManager {
       headingDelta: creature.locomotion
         ? THREE.MathUtils.radToDeg(creature.locomotion.headingDeltaRadians)
         : undefined,
+      // Heading increases toward the creature's right in the shared X/Z convention.
+      turnDirection: creature.locomotion
+        ? creature.locomotion.headingDeltaRadians > 1e-6
+          ? 'RIGHT'
+          : creature.locomotion.headingDeltaRadians < -1e-6
+            ? 'LEFT'
+            : 'ALIGNED'
+        : undefined,
+      maxTurnRateDegreesPerSecond: creature.locomotion?.config.maxTurnRateDegreesPerSecond,
       roamRadius: creature.locomotion?.config.horizontalRoamRadius,
       pauseRemaining: creature.locomotion?.pauseRemainingSeconds,
       materialMode: creature.object3d.material.map ? 'TEXTURE' : 'FALLBACK',
       sectorSizeDegrees: creature.sectorSizeDegrees,
       missingAssetKeys: creature.missingAssetKeys.map(getDirectionalLabel),
+      currentTextureKey: textureFilename.replace(/\.[^.]+$/, '') || 'FALLBACK',
+      currentTextureUrl: currentTextureUrl || '—',
+      textureNativeWidth,
+      textureNativeHeight,
+      textureAspect: textureNativeHeight > 0 ? textureNativeWidth / textureNativeHeight : 0,
+      planeGeometryWidth: geometryWidth,
+      planeGeometryHeight: geometryHeight,
+      meshScaleX: creature.object3d.scale.x,
+      meshScaleY: creature.object3d.scale.y,
+      finalDisplayAspect: finalHeight > 0 ? finalWidth / finalHeight : 0,
     });
   }
 }

@@ -8,7 +8,7 @@ export const dunkleosteusSpecies: CreatureSpeciesDefinition = {
   name: { zhTW: '鄧氏魚', en: 'Dunkleosteus' },
   scientificName: 'Dunkleosteus',
   directionalAssets: dunkleosteusAssets,
-  defaultScale: { width: 4.8, height: 2.4 },
+  defaultScale: { width: 4.8, height: 4.8 },
   rendering: {
     mode: DUNKLEOSTEUS_DIRECTIONAL_MODE,
     billboard: 'cameraFacing',
