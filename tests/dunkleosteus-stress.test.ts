@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { access, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import * as THREE from 'three';
-import { DIRECTIONAL_16_VIEWS, DIRECTIONAL_VIEWS, getMissingDirectionalViews } from '../src/creatures/directional/types';
+import { DIRECTIONAL_16_VIEWS, getMissingDirectionalViews } from '../src/creatures/directional/types';
 import { getDirectionalView } from '../src/creatures/directional/getDirectionalView';
 import { CreatureManager, type CreatureDebugState } from '../src/creatures/CreatureManager';
 import { SpeciesRegistry, getSpeciesById } from '../src/species/speciesRegistry';
@@ -32,13 +32,10 @@ for(const degrees of [10.5,11.5,10.8,11.7]) assert.equal(
   getDirectionalView(rad(degrees),'front',rad(2.5),DIRECTIONAL_16_VIEWS),'front');
 assert.equal(getDirectionalView(rad(13.8),'front',rad(2.5),DIRECTIONAL_16_VIEWS),'frontFrontRight');
 
-for(const view of DIRECTIONAL_VIEWS) {
+for(const view of DIRECTIONAL_16_VIEWS) {
   const file='public/'+DUNKLEOSTEUS_TEXTURE_URLS[view].replace(/^\.\//,'');
   const bytes=await readFile(file);
   assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
-}
-for(const view of Object.keys(DUNKLEOSTEUS_INTERMEDIATE_FALLBACKS)) {
-  await assert.rejects(access('public/'+DUNKLEOSTEUS_TEXTURE_URLS[view as keyof typeof DUNKLEOSTEUS_TEXTURE_URLS]));
 }
 
 const pending:Array<{url:string;finish:(success:boolean)=>void}>=[];
@@ -57,16 +54,11 @@ try {
   pending.length=0;disposalCount=0;
   const loading=dunkleosteusAssets.load();
   assert.equal(pending.length,16);
-  for(const request of pending) {
-    const intermediate=Object.keys(DUNKLEOSTEUS_INTERMEDIATE_FALLBACKS).some(
-      view=>DUNKLEOSTEUS_TEXTURE_URLS[view as keyof typeof DUNKLEOSTEUS_TEXTURE_URLS]===request.url);
-    request.finish(!intermediate);
-  }
+  for(const request of pending) request.finish(true);
   const textures=await loading;
-  assert.equal(getMissingDirectionalViews(textures).length,8);
-  for(const [view,fallback] of Object.entries(DUNKLEOSTEUS_INTERMEDIATE_FALLBACKS))
-    assert.equal((textures as any)[view],(textures as any)[fallback!]);
-  assert.equal(disposalCount,8);
+  assert.equal(getMissingDirectionalViews(textures).length,0);
+  assert.equal(new Set(Object.values(textures)).size,16);
+  assert.equal(disposalCount,0);
 
   const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera();
   const home=new THREE.Vector3(...DUNKLEOSTEUS_SPAWN.position);
@@ -78,7 +70,9 @@ try {
   const manager=new CreatureManager(scene,camera,()=>{},state=>debug=state,new SpeciesRegistry([staticSpecies]));
   const creature=manager.spawnCreature(DUNKLEOSTEUS_SPAWN);
   assert.equal(debug.textureMode,'DIRECTIONAL_16');assert.equal(debug.sectorSizeDegrees,22.5);
-  assert.equal(debug.missingAssetKeys?.length,8);
+  assert.equal(debug.missingAssetKeys?.length,0);
+  assert.equal(debug.textureStatus,'YES');
+  assert.equal(debug.materialMode,'TEXTURE');
   const maps=new Set<THREE.Texture>();
   for(let index=0;index<16;index++) {
     const angle=index*Math.PI/8;
@@ -92,24 +86,34 @@ try {
     assert.equal(creature.secondaryObject3d.visible,false);
     maps.add(creature.object3d.material.map!);
   }
-  assert.equal(pending.length,16);assert.equal(maps.size,8);
+  assert.equal(pending.length,16);assert.equal(maps.size,16);
   const scale=creature.object3d.scale.clone();const y=creature.locomotionPosition.y;
   manager.dispose();
   assert.deepEqual(creature.object3d.scale,scale);assert.equal(creature.object3d.rotation.z,0);
   assert.equal(creature.locomotionPosition.y,y);assert.equal(disposalCount,16);
 
+  // Capability remains available: one missing intermediate aliases a neighbor.
+  pending.length=0;disposalCount=0;
+  const fallbackLoading=dunkleosteusAssets.load();
+  const missingIntermediate='frontFrontRight';
+  for(const request of pending) request.finish(request.url!==DUNKLEOSTEUS_TEXTURE_URLS[missingIntermediate]);
+  const fallbackTextures=await fallbackLoading;
+  assert.deepEqual(getMissingDirectionalViews(fallbackTextures),[missingIntermediate]);
+  assert.equal(fallbackTextures[missingIntermediate],fallbackTextures.front);
+  for(const texture of new Set(Object.values(fallbackTextures))) texture.dispose();
+  assert.equal(disposalCount,16); // one failed placeholder + fifteen unique loaded textures
+
+  // A missing original still has no safe alias and retains the orange fallback.
   pending.length=0;
+  disposalCount=0;
   const fallbackManager=new CreatureManager(new THREE.Scene(),camera,()=>{},()=>{});
   const fallbackCreature=fallbackManager.spawnCreature(DUNKLEOSTEUS_SPAWN);
-  for(const request of pending) {
-    const intermediate=Object.keys(DUNKLEOSTEUS_INTERMEDIATE_FALLBACKS).some(
-      view=>DUNKLEOSTEUS_TEXTURE_URLS[view as keyof typeof DUNKLEOSTEUS_TEXTURE_URLS]===request.url);
-    request.finish(request.url!==DUNKLEOSTEUS_TEXTURE_URLS.front&&!intermediate);
-  }
+  for(const request of pending) request.finish(request.url!==DUNKLEOSTEUS_TEXTURE_URLS.front);
   await tick();
   assert.equal(fallbackCreature.textureStatus,'ERROR');
   assert.equal(fallbackCreature.object3d.visible,true);assert.equal(fallbackCreature.object3d.material.map,null);
   fallbackManager.dispose();
+  assert.equal(disposalCount,16);
 } finally {THREE.Texture.prototype.dispose=originalDispose;}
 
 assert.equal(dunkleosteusSpecies.movement.locomotion.enabled,true);
@@ -118,4 +122,4 @@ if(dunkleosteusSpecies.movement.locomotion.enabled) {
   assert.equal(dunkleosteusSpecies.movement.locomotion.horizontalRoamRadius,3.5);
   assert.equal(dunkleosteusSpecies.movement.locomotion.maxTurnRateDegreesPerSecond,18);
 }
-console.log('PASS: directional-16 keys/centers/wrap/hysteresis, temporal collapse, intermediate fallback/debug, no reload, disposal, unchanged locomotion/ammonite');
+console.log('PASS: 16/16 directional assets, mapping, no normal fallback, temporal collapse, fallback capability, no reload, disposal, unchanged locomotion/ammonite');
