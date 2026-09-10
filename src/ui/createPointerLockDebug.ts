@@ -97,6 +97,9 @@ export function createPointerLockDebug(): PointerLockDebug {
         `Missing Assets: ${state.missingAssetKeys?.length ? state.missingAssetKeys.join(', ') : 'NONE'}`,
         `Current Texture Key: ${state.currentTextureKey ?? '—'}`,
         `Current Texture URL: ${state.currentTextureUrl ?? '—'}`,
+        `Requested Texture: ${state.requestedTextureKey ?? '—'}`,
+        `Actual Texture: ${state.actualTextureKey ?? '—'}`,
+        `Using Pitch Fallback: ${state.usingPitchFallback ? 'YES' : 'NO'}`,
         `Texture Native Size: ${state.textureNativeWidth ?? 0} x ${state.textureNativeHeight ?? 0}`,
         `Texture Aspect: ${(state.textureAspect ?? 0).toFixed(3)}`,
         `Plane Geometry: ${state.planeGeometryWidth ?? 0} x ${state.planeGeometryHeight ?? 0}`,
@@ -108,7 +111,7 @@ export function createPointerLockDebug(): PointerLockDebug {
         `Observation: ${state.observation ?? 'NORMAL'}`,
         `Rendering Mode: ${state.textureMode ?? '—'}`,
         `Vertical Angle: ${(state.verticalAngle ?? 0).toFixed(1)}°`,
-        ...(state.textureMode === 'PITCH_DIRECTIONAL_8X3' ? [
+        ...(state.textureMode === 'PITCH_DIRECTIONAL_8X3' || state.textureMode === 'PITCH_DIRECTIONAL_16X3' ? [
           `Pitch Layer: ${state.pitchLayer ?? '—'}`,
           `Pitch Threshold: ${state.pitchThreshold ?? '—'}°`,
           `Pitch Hysteresis: ${state.pitchHysteresis ?? '—'}°`,

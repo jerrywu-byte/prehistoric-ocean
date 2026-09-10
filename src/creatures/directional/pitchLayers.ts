@@ -1,8 +1,11 @@
-import type { DirectionalTextureSet, HorizontalDirectionalTextureSet } from './types';
+import type { Texture } from 'three';
+import type { HorizontalDirectionalTextureSet, HorizontalDirectionalView } from './types';
 
 export const PITCH_LAYERS = ['top', 'mid', 'bottom'] as const;
 export type PitchLayer = typeof PITCH_LAYERS[number];
-export type PitchDirectionalTextureSet = Readonly<Record<PitchLayer, DirectionalTextureSet>>;
+export type PitchDirectionalTextureSet = Readonly<
+  Record<PitchLayer, Readonly<Partial<Record<HorizontalDirectionalView, Texture>>>>
+>;
 export type CreatureTextureSet = HorizontalDirectionalTextureSet | PitchDirectionalTextureSet;
 
 // Degrees, measured from the horizontal plane; equality retains the current layer.

@@ -87,6 +87,9 @@ export interface CreatureDebugState {
   readonly currentDirectionIndex?: number;
   readonly directionIndexDelta?: number;
   readonly nonAdjacentDirectionJump?: boolean;
+  readonly requestedTextureKey?: string;
+  readonly actualTextureKey?: string;
+  readonly usingPitchFallback?: boolean;
 }
 
 interface TextureImageDiagnostics {
@@ -180,6 +183,10 @@ export class CreatureManager {
     const textureImage = materialTexture?.image as TextureImageDiagnostics | undefined;
     const currentTextureUrl = textureImage?.currentSrc || textureImage?.src || '';
     const textureFilename = currentTextureUrl.split(/[?#]/)[0].split('/').pop() ?? '';
+    const requestedTextureKey = species.id + '_'
+      + (creature.currentPitchLayer ?? 'mid') + '_'
+      + getDirectionalLabel(creature.view ?? 'front').toLowerCase();
+    const actualTextureKey = textureFilename.replace(/\.[^.]+$/, '') || 'FALLBACK';
     const textureNativeWidth = textureImage?.naturalWidth || textureImage?.width || 0;
     const textureNativeHeight = textureImage?.naturalHeight || textureImage?.height || 0;
     const geometryWidth = creature.object3d.geometry.parameters.width;
@@ -281,6 +288,11 @@ export class CreatureManager {
       currentDirectionIndex: creature.currentDirectionIndex,
       directionIndexDelta: creature.directionIndexDelta,
       nonAdjacentDirectionJump: creature.nonAdjacentDirectionJump,
+      requestedTextureKey,
+      actualTextureKey,
+      usingPitchFallback: creature.currentPitchLayer !== null
+        && creature.currentPitchLayer !== 'mid'
+        && actualTextureKey.includes('_mid_'),
     });
   }
 }

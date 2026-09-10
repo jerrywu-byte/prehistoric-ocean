@@ -56,7 +56,10 @@ export class Creature {
   }
   get sectorSizeDegrees(): number { return 360 / this.horizontalViews.length; }
   private get horizontalViews(): readonly HorizontalDirectionalView[] {
-    return this.species.rendering.mode === 'directional_16' ? DIRECTIONAL_16_VIEWS : DIRECTIONAL_VIEWS;
+    return this.species.rendering.mode === 'directional_16'
+      || this.species.rendering.mode === 'pitch_directional_16x3'
+      ? DIRECTIONAL_16_VIEWS
+      : DIRECTIONAL_VIEWS;
   }
 
   constructor(
@@ -131,10 +134,11 @@ export class Creature {
     };
     const apply = (textures: CreatureTextureSet): void => {
       if (this.disposed) { this.disposeTextures(textures); return; }
-      const layered = this.species.rendering.mode === 'pitch_directional_8x3';
+      const layered = this.species.rendering.mode === 'pitch_directional_8x3'
+        || this.species.rendering.mode === 'pitch_directional_16x3';
       const views = this.horizontalViews;
       const valid = layered
-        ? isPitchTextureSet(textures) && PITCH_LAYERS.every(layer => DIRECTIONAL_VIEWS.every(view => textures[layer]?.[view]?.isTexture))
+        ? isPitchTextureSet(textures) && PITCH_LAYERS.every(layer => views.every(view => textures[layer]?.[view]?.isTexture))
         : !isPitchTextureSet(textures)
           && views.every(view => (textures as Partial<Record<HorizontalDirectionalView, THREE.Texture>>)[view]?.isTexture);
       if (!valid) {
@@ -189,7 +193,8 @@ export class Creature {
     const orientation = this.species.orientation;
     this.verticalAngle = Math.atan2(camera.position.y - this.object3d.position.y, horizontalDistance);
     const previousPitchLayer = this.currentPitchLayer;
-    if (this.species.rendering.mode === 'pitch_directional_8x3') {
+    if (this.species.rendering.mode === 'pitch_directional_8x3'
+        || this.species.rendering.mode === 'pitch_directional_16x3') {
       this.currentPitchLayer = getPitchLayer(THREE.MathUtils.radToDeg(this.verticalAngle), this.currentPitchLayer,
         orientation.pitchLayerThresholdDegrees, orientation.pitchLayerHysteresisDegrees);
     }
@@ -259,7 +264,7 @@ export class Creature {
     const set = this.directionalTextures;
     if (!set) return null;
     return isPitchTextureSet(set)
-      ? set[this.currentPitchLayer ?? 'mid'][view as keyof typeof set.mid ?? 'front']
+      ? set[this.currentPitchLayer ?? 'mid'][view as keyof typeof set.mid ?? 'front'] ?? null
       : (set as Partial<Record<HorizontalDirectionalView, THREE.Texture>>)[view ?? 'front'] ?? null;
   }
 

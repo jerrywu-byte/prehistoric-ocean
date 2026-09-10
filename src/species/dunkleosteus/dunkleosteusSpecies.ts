@@ -20,9 +20,7 @@ export const dunkleosteusSpecies: CreatureSpeciesDefinition = {
     depthWrite: false,
     fog: true,
     toneMapped: false,
-    horizontalDirectionTransition: DUNKLEOSTEUS_DIRECTIONAL_MODE === 'directional_16'
-      ? { enabled: true, durationMs: 110, hysteresisDegrees: 2.5 }
-      : { enabled: true, durationMs: 140, hysteresisDegrees: 4 },
+    horizontalDirectionTransition: { enabled: true, durationMs: 110, hysteresisDegrees: 2.5 },
   },
   orientation: {
     defaultHeadingDegrees: 90,
