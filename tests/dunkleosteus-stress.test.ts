@@ -12,6 +12,7 @@ import { DUNKLEOSTEUS_DIRECTIONAL_MODE,
   dunkleosteusAssets } from '../src/species/dunkleosteus/dunkleosteusAssets';
 import { DUNKLEOSTEUS_SPAWN } from '../src/world/creatureSpawns';
 import { isPitchTextureSet } from '../src/creatures/directional/pitchLayers';
+import { constrainDiverPosition, getSeabedHeightAt, WORLD_LIMITS } from '../src/world/worldLimits';
 
 const rad=THREE.MathUtils.degToRad;
 assert.equal(getSpeciesById('dunkleosteus'),dunkleosteusSpecies);
@@ -20,8 +21,8 @@ assert.equal(dunkleosteusSpecies.rendering.mode,'pitch_directional_16x3');
 assert.equal(dunkleosteusSpecies.rendering.billboard,'cameraFacing');
 assert.equal(dunkleosteusSpecies.rendering.horizontalDirectionTransition.durationMs,110);
 assert.equal(dunkleosteusSpecies.rendering.horizontalDirectionTransition.hysteresisDegrees,2.5);
-assert.equal(dunkleosteusSpecies.orientation.pitchLayerThresholdDegrees,20);
-assert.equal(dunkleosteusSpecies.orientation.pitchLayerHysteresisDegrees,5);
+assert.equal(dunkleosteusSpecies.orientation.pitchLayerThresholdDegrees,15);
+assert.equal(dunkleosteusSpecies.orientation.pitchLayerHysteresisDegrees,3);
 assert.equal(ammoniteSpecies.rendering.mode,'pitch_directional_8x3');
 assert.equal(ammoniteSpecies.rendering.horizontalDirectionTransition.durationMs,140);
 assert.deepEqual(DIRECTIONAL_16_VIEWS.map(view=>DUNKLEOSTEUS_TEXTURE_URLS[view]),[
@@ -193,6 +194,35 @@ try {
     assert.equal(debug.actualTextureKey,'dunkleosteus_mid_front_right');
     assert.equal(debug.usingPitchFallback,true);
   }
+
+  // Reachability through the same world constraint used by DiverControls.
+  const velocity=new THREE.Vector3();
+  const reachableHorizontalDistance=6;
+  const setReachableCameraY=(requestedY:number):void=>{
+    camera.position.set(home.x,requestedY,home.z+reachableHorizontalDistance);
+    constrainDiverPosition(camera.position,velocity);
+    manager.update(.12);
+  };
+  setReachableCameraY(home.y);
+  assert.equal(creature.currentPitchLayer,'mid');
+  const horizontalIndexAtMid=creature.directionIndex;
+  setReachableCameraY(WORLD_LIMITS.maxY);
+  assert.equal(camera.position.y,WORLD_LIMITS.maxY);
+  assert.equal(creature.currentPitchLayer,'top');
+  assert.ok((debug.verticalAngle ?? 0)>18);
+  assert.equal(creature.directionIndex,horizontalIndexAtMid);
+  assert.equal(debug.cameraY,camera.position.y);
+  assert.equal(debug.creatureY,creature.object3d.position.y);
+  assert.equal(debug.verticalDifference,camera.position.y-creature.object3d.position.y);
+  assert.equal(debug.horizontalDistance,reachableHorizontalDistance);
+  setReachableCameraY(home.y);
+  assert.equal(creature.currentPitchLayer,'mid');
+  setReachableCameraY(-100);
+  const minimumDiverY=getSeabedHeightAt(camera.position.x,camera.position.z)+WORLD_LIMITS.seabedClearance;
+  assert.ok(Math.abs(camera.position.y-minimumDiverY)<1e-9);
+  assert.equal(creature.currentPitchLayer,'bottom');
+  assert.ok((debug.verticalAngle ?? 0)<-18);
+  assert.equal(creature.directionIndex,horizontalIndexAtMid);
   const scale=creature.object3d.scale.clone();const y=creature.locomotionPosition.y;
   manager.dispose();
   assert.deepEqual(creature.object3d.scale,scale);assert.equal(creature.object3d.rotation.z,0);
@@ -225,4 +255,4 @@ if(dunkleosteusSpecies.movement.locomotion.enabled) {
   assert.equal(dunkleosteusSpecies.movement.locomotion.horizontalRoamRadius,3.5);
   assert.equal(dunkleosteusSpecies.movement.locomotion.maxTurnRateDegreesPerSecond,18);
 }
-console.log('PASS: MID 16-direction plus TOP/MID/BOTTOM prototype, same-direction MID fallback, no reload, disposal, unchanged locomotion/ammonite');
+console.log('PASS: reachable TOP/MID/BOTTOM within diver world limits, MID fallback, no reload, disposal, unchanged locomotion/ammonite');

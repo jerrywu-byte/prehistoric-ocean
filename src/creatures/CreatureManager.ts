@@ -39,6 +39,10 @@ export interface CreatureDebugState {
   readonly observation?: 'NORMAL' | 'TOO CLOSE';
   readonly textureMode?: string;
   readonly verticalAngle?: number;
+  readonly cameraY?: number;
+  readonly creatureY?: number;
+  readonly verticalDifference?: number;
+  readonly horizontalDistance?: number;
   readonly targetPitch?: number;
   readonly appliedPitch?: number;
   readonly pitchLimit?: number;
@@ -193,6 +197,11 @@ export class CreatureManager {
     const geometryHeight = creature.object3d.geometry.parameters.height;
     const finalWidth = geometryWidth * creature.object3d.scale.x;
     const finalHeight = geometryHeight * creature.object3d.scale.y;
+    const verticalDifference = this.camera.position.y - creature.object3d.position.y;
+    const horizontalDistance = Math.hypot(
+      this.camera.position.x - creature.object3d.position.x,
+      this.camera.position.z - creature.object3d.position.z,
+    );
     this.onDebugChange({
       count: this.creatures.length,
       visible: creature.object3d.visible,
@@ -220,6 +229,10 @@ export class CreatureManager {
       relativeAngle: creature.relativeAngle * 180 / Math.PI,
       heading: creature.headingRadians * 180 / Math.PI,
       verticalAngle: THREE.MathUtils.radToDeg(creature.verticalAngle),
+      cameraY: this.camera.position.y,
+      creatureY: creature.object3d.position.y,
+      verticalDifference,
+      horizontalDistance,
       targetPitch: THREE.MathUtils.radToDeg(creature.targetPitch),
       appliedPitch: THREE.MathUtils.radToDeg(creature.appliedPitch),
       pitchLimit: species.orientation.maxBillboardPitchDegrees,

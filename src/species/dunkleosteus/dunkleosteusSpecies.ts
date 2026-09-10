@@ -29,9 +29,8 @@ export const dunkleosteusSpecies: CreatureSpeciesDefinition = {
     billboardPitchDeadZoneDegrees: 3,
     billboardPitchResponseSeconds: 0.18,
     billboardHorizontalEpsilon: 0.01,
-    // Unused in directional_8; no TOP/BOTTOM selection or textures.
-    pitchLayerThresholdDegrees: 20,
-    pitchLayerHysteresisDegrees: 5,
+    pitchLayerThresholdDegrees: 15,
+    pitchLayerHysteresisDegrees: 3,
   },
   interaction: { interactionDistance: 6, minimumObservationDistance: 2.25 },
   movement: {

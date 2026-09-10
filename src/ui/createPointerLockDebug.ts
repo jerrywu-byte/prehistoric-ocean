@@ -110,6 +110,10 @@ export function createPointerLockDebug(): PointerLockDebug {
         `Distance: ${(state.distance ?? 0).toFixed(2)}`,
         `Observation: ${state.observation ?? 'NORMAL'}`,
         `Rendering Mode: ${state.textureMode ?? '—'}`,
+        `Camera Y: ${(state.cameraY ?? 0).toFixed(2)}`,
+        `Creature Y: ${(state.creatureY ?? 0).toFixed(2)}`,
+        `Vertical Difference: ${(state.verticalDifference ?? 0) >= 0 ? '+' : ''}${(state.verticalDifference ?? 0).toFixed(2)}`,
+        `Horizontal Distance: ${(state.horizontalDistance ?? 0).toFixed(2)}`,
         `Vertical Angle: ${(state.verticalAngle ?? 0).toFixed(1)}°`,
         ...(state.textureMode === 'PITCH_DIRECTIONAL_8X3' || state.textureMode === 'PITCH_DIRECTIONAL_16X3' ? [
           `Pitch Layer: ${state.pitchLayer ?? '—'}`,
