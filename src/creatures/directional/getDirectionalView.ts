@@ -12,6 +12,20 @@ export function getRelativeAngle(dx: number, dz: number, heading: number): numbe
   return wrapAngle(Math.atan2(dz, dx) - heading);
 }
 
+export function getWrappedDirectionIndexDelta(
+  previousIndex: number,
+  currentIndex: number,
+  directionCount: number,
+): number {
+  if (!Number.isInteger(previousIndex) || !Number.isInteger(currentIndex)
+      || !Number.isInteger(directionCount) || directionCount <= 0) return 0;
+  let delta = currentIndex - previousIndex;
+  const half = directionCount / 2;
+  if (delta > half) delta -= directionCount;
+  if (delta < -half) delta += directionCount;
+  return delta;
+}
+
 export function getDirectionalView(
   angle: number,
   previous: HorizontalDirectionalView | null,

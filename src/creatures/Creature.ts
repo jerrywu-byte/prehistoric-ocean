@@ -3,7 +3,12 @@ import { getTargetPitch, smoothPitch } from './directional/constrainedPitch';
 import type { CreatureSpeciesDefinition } from '../species/SpeciesDefinition';
 import { PITCH_LAYERS, getPitchLayer, isPitchTextureSet, type CreatureTextureSet, type PitchLayer } from './directional/pitchLayers';
 import type { CreatureSpawnConfig } from './CreatureSpawnConfig';
-import { DIRECTIONAL_VIEWS, getDirectionalView, getRelativeAngle } from './directional/getDirectionalView';
+import {
+  DIRECTIONAL_VIEWS,
+  getDirectionalView,
+  getRelativeAngle,
+  getWrappedDirectionIndexDelta,
+} from './directional/getDirectionalView';
 import {
   DIRECTIONAL_16_VIEWS,
   getMissingDirectionalViews,
@@ -39,6 +44,12 @@ export class Creature {
   verticalAngle = 0;
   targetPitch = 0;
   appliedPitch = 0;
+  previousSelectedDirection: HorizontalDirectionalView | null = null;
+  currentSelectedDirection: HorizontalDirectionalView | null = null;
+  previousDirectionIndex = -1;
+  currentDirectionIndex = -1;
+  directionIndexDelta = 0;
+  nonAdjacentDirectionJump = false;
   get view(): HorizontalDirectionalView | null { return this.currentDirectionalView; }
   get directionIndex(): number {
     return this.view === null ? -1 : this.horizontalViews.indexOf(this.view);
@@ -198,6 +209,25 @@ export class Creature {
         this.horizontalTransition.initialized ? this.horizontalTransition.target : null,
         THREE.MathUtils.degToRad(config.enabled ? config.hysteresisDegrees : orientation.directionalHysteresisDegrees),
         this.horizontalViews);
+      const previousTarget = this.horizontalTransition.initialized
+        ? this.horizontalTransition.target
+        : null;
+      if (next !== previousTarget) {
+        const nextIndex = this.horizontalViews.indexOf(next);
+        const previousIndex = previousTarget === null
+          ? nextIndex
+          : this.horizontalViews.indexOf(previousTarget);
+        this.previousSelectedDirection = previousTarget ?? next;
+        this.currentSelectedDirection = next;
+        this.previousDirectionIndex = previousIndex;
+        this.currentDirectionIndex = nextIndex;
+        this.directionIndexDelta = getWrappedDirectionIndexDelta(
+          previousIndex,
+          nextIndex,
+          this.horizontalViews.length,
+        );
+        this.nonAdjacentDirectionJump = Math.abs(this.directionIndexDelta) > 1;
+      }
       if (next !== this.view) {
         this.previousDirectionalView = this.view;
         this.currentDirectionalView = next;

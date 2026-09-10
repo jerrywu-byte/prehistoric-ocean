@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from 'three';
 import { DIRECTIONAL_16_VIEWS, getMissingDirectionalViews } from '../src/creatures/directional/types';
-import { getDirectionalView } from '../src/creatures/directional/getDirectionalView';
+import { getDirectionalView, getRelativeAngle, getWrappedDirectionIndexDelta } from '../src/creatures/directional/getDirectionalView';
 import { CreatureManager, type CreatureDebugState } from '../src/creatures/CreatureManager';
 import { SpeciesRegistry, getSpeciesById } from '../src/species/speciesRegistry';
 import { dunkleosteusSpecies } from '../src/species/dunkleosteus/dunkleosteusSpecies';
 import { ammoniteSpecies } from '../src/species/ammonite/ammoniteSpecies';
-import { DUNKLEOSTEUS_DIRECTIONAL_MODE, DUNKLEOSTEUS_INTERMEDIATE_FALLBACKS,
+import { DUNKLEOSTEUS_DIRECTIONAL_MODE,
   DUNKLEOSTEUS_TEXTURE_URLS, dunkleosteusAssets } from '../src/species/dunkleosteus/dunkleosteusAssets';
 import { DUNKLEOSTEUS_SPAWN } from '../src/world/creatureSpawns';
 
@@ -20,10 +20,30 @@ assert.equal(dunkleosteusSpecies.rendering.horizontalDirectionTransition.duratio
 assert.equal(dunkleosteusSpecies.rendering.horizontalDirectionTransition.hysteresisDegrees,2.5);
 assert.equal(ammoniteSpecies.rendering.mode,'pitch_directional_8x3');
 assert.equal(ammoniteSpecies.rendering.horizontalDirectionTransition.durationMs,140);
-assert.deepEqual(Object.keys(DUNKLEOSTEUS_TEXTURE_URLS),DIRECTIONAL_16_VIEWS);
-assert.equal(new Set(Object.values(DUNKLEOSTEUS_TEXTURE_URLS)).size,16);
-assert.equal(Object.keys(DUNKLEOSTEUS_INTERMEDIATE_FALLBACKS).length,8);
+assert.deepEqual(DIRECTIONAL_16_VIEWS.map(view=>DUNKLEOSTEUS_TEXTURE_URLS[view]),[
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_front.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_front_front_right.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_front_right.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_right_front.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_right.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_right_back.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_back_right.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_back_back_right.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_back.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_back_back_left.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_back_left.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_left_back.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_left.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_left_front.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_front_left.png',
+  './assets/creatures/dunkleosteus/dunkleosteus_mid_front_front_left.png',
+]);
+assert.equal(new Set(DIRECTIONAL_16_VIEWS.map(view=>DUNKLEOSTEUS_TEXTURE_URLS[view])).size,16);
 assert.equal(360/DIRECTIONAL_16_VIEWS.length,22.5);
+assert.deepEqual(DIRECTIONAL_16_VIEWS,[
+  'front','frontFrontRight','frontRight','rightFront','right','rightBack','backRight','backBackRight',
+  'back','backBackLeft','backLeft','leftBack','left','leftFront','frontLeft','frontFrontLeft',
+]);
 for(let i=0;i<16;i++) assert.equal(
   getDirectionalView(rad(i*22.5),null,rad(2.5),DIRECTIONAL_16_VIEWS),DIRECTIONAL_16_VIEWS[i]);
 for(const degrees of [179,-179,180,-180,540]) assert.equal(
@@ -31,11 +51,41 @@ for(const degrees of [179,-179,180,-180,540]) assert.equal(
 for(const degrees of [10.5,11.5,10.8,11.7]) assert.equal(
   getDirectionalView(rad(degrees),'front',rad(2.5),DIRECTIONAL_16_VIEWS),'front');
 assert.equal(getDirectionalView(rad(13.8),'front',rad(2.5),DIRECTIONAL_16_VIEWS),'frontFrontRight');
+assert.equal(getWrappedDirectionIndexDelta(15,0,16),1);
+assert.equal(getWrappedDirectionIndexDelta(0,15,16),-1);
+
+// The shared heading convention is atan2(z, x): heading +Z is 90 degrees.
+// Camera vectors +Z / -X / -Z / +X produce 0 / +90 / -180 / -90.
+assert.equal(getRelativeAngle(0,1,rad(90)),0);
+assert.equal(getRelativeAngle(-1,0,rad(90)),rad(90));
+assert.equal(getRelativeAngle(0,-1,rad(90)),rad(-180));
+assert.equal(getRelativeAngle(1,0,rad(90)),rad(-90));
+
+const sweep=(start:number,end:number,step:number):number[]=>{
+  let previous:null|(typeof DIRECTIONAL_16_VIEWS)[number]=null;
+  let previousIndex=-1;
+  const indices:number[]=[];
+  for(let degrees=start;step>0?degrees<=end:degrees>=end;degrees+=step){
+    const next=getDirectionalView(rad(degrees),previous,rad(2.5),DIRECTIONAL_16_VIEWS) as (typeof DIRECTIONAL_16_VIEWS)[number];
+    const index=DIRECTIONAL_16_VIEWS.indexOf(next);
+    if(index!==previousIndex){
+      if(previousIndex>=0) assert.ok(Math.abs(getWrappedDirectionIndexDelta(previousIndex,index,16))<=1);
+      indices.push(index);previousIndex=index;
+    }
+    previous=next;
+  }
+  return indices;
+};
+assert.deepEqual(sweep(0,360,1),[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0]);
+assert.deepEqual(sweep(360,0,-1),[0,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0]);
 
 for(const view of DIRECTIONAL_16_VIEWS) {
   const file='public/'+DUNKLEOSTEUS_TEXTURE_URLS[view].replace(/^\.\//,'');
   const bytes=await readFile(file);
   assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
+  assert.equal(bytes.readUInt32BE(16),1254);
+  assert.equal(bytes.readUInt32BE(20),1254);
+  assert.equal(bytes[25],6); // PNG color type 6: truecolor with alpha.
 }
 
 const pending:Array<{url:string;finish:(success:boolean)=>void}>=[];
@@ -81,6 +131,8 @@ try {
   assert.equal(debug.planeGeometryWidth,1);assert.equal(debug.planeGeometryHeight,1);
   assert.equal(debug.meshScaleX,4.8);assert.equal(debug.meshScaleY,4.8);
   assert.equal(debug.finalDisplayAspect,1);
+  assert.equal(debug.previousDirectionIndex,0);assert.equal(debug.currentDirectionIndex,0);
+  assert.equal(debug.directionIndexDelta,0);assert.equal(debug.nonAdjacentDirectionJump,false);
   const maps=new Set<THREE.Texture>();
   for(let index=0;index<16;index++) {
     const angle=index*Math.PI/8;
@@ -93,6 +145,8 @@ try {
     assert.equal(creature.object3d.material.opacity,1);
     assert.equal(creature.secondaryObject3d.visible,false);
     maps.add(creature.object3d.material.map!);
+    assert.ok(Math.abs(debug.directionIndexDelta ?? 0)<=1);
+    assert.equal(debug.nonAdjacentDirectionJump,false);
   }
   assert.equal(pending.length,16);assert.equal(maps.size,16);
   const scale=creature.object3d.scale.clone();const y=creature.locomotionPosition.y;
@@ -100,16 +154,13 @@ try {
   assert.deepEqual(creature.object3d.scale,scale);assert.equal(creature.object3d.rotation.z,0);
   assert.equal(creature.locomotionPosition.y,y);assert.equal(disposalCount,16);
 
-  // Capability remains available: one missing intermediate aliases a neighbor.
+  // No direction borrows another asset: any missing PNG falls back at creature level.
   pending.length=0;disposalCount=0;
-  const fallbackLoading=dunkleosteusAssets.load();
+  const missingLoading=dunkleosteusAssets.load();
   const missingIntermediate='frontFrontRight';
   for(const request of pending) request.finish(request.url!==DUNKLEOSTEUS_TEXTURE_URLS[missingIntermediate]);
-  const fallbackTextures=await fallbackLoading;
-  assert.deepEqual(getMissingDirectionalViews(fallbackTextures),[missingIntermediate]);
-  assert.equal(fallbackTextures[missingIntermediate],fallbackTextures.front);
-  for(const texture of new Set(Object.values(fallbackTextures))) texture.dispose();
-  assert.equal(disposalCount,16); // one failed placeholder + fifteen unique loaded textures
+  await assert.rejects(missingLoading,/Directional texture failed to load/);
+  assert.equal(disposalCount,16);
 
   // A missing original still has no safe alias and retains the orange fallback.
   pending.length=0;

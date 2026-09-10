@@ -81,6 +81,12 @@ export interface CreatureDebugState {
   readonly meshScaleX?: number;
   readonly meshScaleY?: number;
   readonly finalDisplayAspect?: number;
+  readonly previousSelectedDirection?: string;
+  readonly currentSelectedDirection?: string;
+  readonly previousDirectionIndex?: number;
+  readonly currentDirectionIndex?: number;
+  readonly directionIndexDelta?: number;
+  readonly nonAdjacentDirectionJump?: boolean;
 }
 
 interface TextureImageDiagnostics {
@@ -265,6 +271,16 @@ export class CreatureManager {
       meshScaleX: creature.object3d.scale.x,
       meshScaleY: creature.object3d.scale.y,
       finalDisplayAspect: finalHeight > 0 ? finalWidth / finalHeight : 0,
+      previousSelectedDirection: creature.previousSelectedDirection
+        ? getDirectionalLabel(creature.previousSelectedDirection)
+        : '—',
+      currentSelectedDirection: creature.currentSelectedDirection
+        ? getDirectionalLabel(creature.currentSelectedDirection)
+        : '—',
+      previousDirectionIndex: creature.previousDirectionIndex,
+      currentDirectionIndex: creature.currentDirectionIndex,
+      directionIndexDelta: creature.directionIndexDelta,
+      nonAdjacentDirectionJump: creature.nonAdjacentDirectionJump,
     });
   }
 }
