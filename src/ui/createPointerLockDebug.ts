@@ -99,6 +99,8 @@ export function createPointerLockDebug(): PointerLockDebug {
         `Current Texture URL: ${state.currentTextureUrl ?? '—'}`,
         `Requested Texture: ${state.requestedTextureKey ?? '—'}`,
         `Actual Texture: ${state.actualTextureKey ?? '—'}`,
+        `Requested Texture URL: ${state.requestedTextureUrl ?? '—'}`,
+        `Actual Texture URL: ${state.actualTextureUrl ?? '—'}`,
         `Using Pitch Fallback: ${state.usingPitchFallback ? 'YES' : 'NO'}`,
         `Texture Native Size: ${state.textureNativeWidth ?? 0} x ${state.textureNativeHeight ?? 0}`,
         `Texture Aspect: ${(state.textureAspect ?? 0).toFixed(3)}`,

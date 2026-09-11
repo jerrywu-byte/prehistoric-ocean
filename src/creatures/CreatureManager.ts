@@ -93,6 +93,8 @@ export interface CreatureDebugState {
   readonly nonAdjacentDirectionJump?: boolean;
   readonly requestedTextureKey?: string;
   readonly actualTextureKey?: string;
+  readonly requestedTextureUrl?: string;
+  readonly actualTextureUrl?: string;
   readonly usingPitchFallback?: boolean;
 }
 
@@ -187,6 +189,8 @@ export class CreatureManager {
     const textureImage = materialTexture?.image as TextureImageDiagnostics | undefined;
     const currentTextureUrl = textureImage?.currentSrc || textureImage?.src || '';
     const textureFilename = currentTextureUrl.split(/[?#]/)[0].split('/').pop() ?? '';
+    const requestedTextureImage = creature.requestedTexture?.image as TextureImageDiagnostics | undefined;
+    const requestedTextureUrl = requestedTextureImage?.currentSrc || requestedTextureImage?.src || '';
     const requestedTextureKey = species.id + '_'
       + (creature.currentPitchLayer ?? 'mid') + '_'
       + getDirectionalLabel(creature.view ?? 'front').toLowerCase();
@@ -303,6 +307,8 @@ export class CreatureManager {
       nonAdjacentDirectionJump: creature.nonAdjacentDirectionJump,
       requestedTextureKey,
       actualTextureKey,
+      requestedTextureUrl: requestedTextureUrl || '—',
+      actualTextureUrl: currentTextureUrl || '—',
       usingPitchFallback: creature.currentPitchLayer !== null
         && creature.currentPitchLayer !== 'mid'
         && actualTextureKey.includes('_mid_'),

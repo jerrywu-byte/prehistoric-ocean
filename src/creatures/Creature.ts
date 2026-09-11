@@ -55,6 +55,7 @@ export class Creature {
     return this.view === null ? -1 : this.horizontalViews.indexOf(this.view);
   }
   get sectorSizeDegrees(): number { return 360 / this.horizontalViews.length; }
+  get requestedTexture(): THREE.Texture | null { return this.selectedTexture(this.view); }
   private get horizontalViews(): readonly HorizontalDirectionalView[] {
     return this.species.rendering.mode === 'directional_16'
       || this.species.rendering.mode === 'pitch_directional_16x3'

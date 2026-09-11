@@ -11,7 +11,7 @@ import { DUNKLEOSTEUS_DIRECTIONAL_MODE,
   DUNKLEOSTEUS_PITCH_TEXTURE_URLS, DUNKLEOSTEUS_TEXTURE_URLS,
   dunkleosteusAssets } from '../src/species/dunkleosteus/dunkleosteusAssets';
 import { DUNKLEOSTEUS_SPAWN } from '../src/world/creatureSpawns';
-import { isPitchTextureSet } from '../src/creatures/directional/pitchLayers';
+import { PITCH_LAYERS, isPitchTextureSet, type PitchLayer } from '../src/creatures/directional/pitchLayers';
 import { constrainDiverPosition, getSeabedHeightAt, WORLD_LIMITS } from '../src/world/worldLimits';
 
 const rad=THREE.MathUtils.degToRad;
@@ -84,20 +84,16 @@ const sweep=(start:number,end:number,step:number):number[]=>{
 assert.deepEqual(sweep(0,360,1),[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0]);
 assert.deepEqual(sweep(360,0,-1),[0,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0]);
 
-for(const view of DIRECTIONAL_16_VIEWS) {
-  const file='public/'+DUNKLEOSTEUS_TEXTURE_URLS[view].replace(/^\.\//,'');
-  const bytes=await readFile(file);
-  assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
-  assert.equal(bytes.readUInt32BE(16),1254);
-  assert.equal(bytes.readUInt32BE(20),1254);
-  assert.equal(bytes[25],6); // PNG color type 6: truecolor with alpha.
-}
-for(const layer of ['top','bottom'] as const) for(const view of ['front','right','back'] as const) {
+const allDirectionalUrls=PITCH_LAYERS.flatMap(layer=>
+  DIRECTIONAL_16_VIEWS.map(view=>DUNKLEOSTEUS_PITCH_TEXTURE_URLS[layer][view]));
+assert.equal(allDirectionalUrls.length,48);
+assert.equal(new Set(allDirectionalUrls).size,48);
+for(const layer of PITCH_LAYERS) for(const view of DIRECTIONAL_16_VIEWS) {
   const file='public/'+DUNKLEOSTEUS_PITCH_TEXTURE_URLS[layer][view].replace(/^\.\//,'');
   const bytes=await readFile(file);
   assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
   assert.equal(bytes.readUInt32BE(16),1254);assert.equal(bytes.readUInt32BE(20),1254);
-  assert.equal(bytes[25],6);
+  assert.equal(bytes[25],6); // PNG color type 6: truecolor with alpha.
 }
 
 const pending:Array<{url:string;finish:(success:boolean)=>void}>=[];
@@ -116,16 +112,13 @@ THREE.Texture.prototype.dispose=function(){disposalCount++;originalDispose.call(
 try {
   pending.length=0;disposalCount=0;
   const loading=dunkleosteusAssets.load();
-  assert.equal(pending.length,16);
+  assert.equal(pending.length,48);
   for(const request of pending) request.finish(true);
-  await tick();
-  assert.equal(pending.length,22);
-  for(const request of pending.slice(16)) request.finish(true);
   const textures=await loading;
   assert.equal(isPitchTextureSet(textures),true);
   if(!isPitchTextureSet(textures)) throw new Error('Expected pitch texture set');
   assert.equal(getMissingDirectionalViews(textures).length,0);
-  assert.equal(new Set(Object.values(textures).flatMap(layer=>Object.values(layer))).size,22);
+  assert.equal(new Set(Object.values(textures).flatMap(layer=>Object.values(layer))).size,48);
   assert.equal(disposalCount,0);
 
   const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera();
@@ -152,47 +145,56 @@ try {
   assert.equal(debug.previousDirectionIndex,0);assert.equal(debug.currentDirectionIndex,0);
   assert.equal(debug.directionIndexDelta,0);assert.equal(debug.nonAdjacentDirectionJump,false);
   const maps=new Set<THREE.Texture>();
-  for(let index=0;index<16;index++) {
+  const elevationByLayer:Record<PitchLayer,number>={top:40,mid:0,bottom:-40};
+  const elevationY=(degrees:number)=>home.y+8*Math.tan(rad(degrees));
+  const settleView=(layer:PitchLayer,index:number):void=>{
+    const view=DIRECTIONAL_16_VIEWS[index];
     const angle=index*Math.PI/8;
-    camera.position.set(home.x-Math.sin(angle)*8,home.y,home.z+Math.cos(angle)*8);
+    camera.position.set(home.x-Math.sin(angle)*8,elevationY(elevationByLayer[layer]),home.z+Math.cos(angle)*8);
     manager.update(.001);
-    assert.equal(creature.horizontalTransition.target,DIRECTIONAL_16_VIEWS[index]);
+    assert.equal(creature.horizontalTransition.target,view);
     manager.update(.11);
-    assert.equal(creature.view,DIRECTIONAL_16_VIEWS[index]);
+    assert.equal(creature.view,view);
+    assert.equal(creature.currentPitchLayer,layer);
+    assert.equal(creature.directionIndex,index);
     assert.equal(creature.horizontalTransition.active,false);
     assert.equal(creature.object3d.material.opacity,1);
     assert.equal(creature.secondaryObject3d.visible,false);
     maps.add(creature.object3d.material.map!);
-    assert.ok(Math.abs(debug.directionIndexDelta ?? 0)<=1);
-    assert.equal(debug.nonAdjacentDirectionJump,false);
-  }
-  assert.equal(pending.length,22);assert.equal(maps.size,16);
-
-  const elevationY=(degrees:number)=>home.y+8*Math.tan(rad(degrees));
-  for(const [index,view] of [[0,'front'],[4,'right'],[8,'back']] as const) {
-    const angle=index*Math.PI/8;
-    for(const [elevation,layer] of [[40,'top'],[0,'mid'],[-40,'bottom']] as const) {
-      camera.position.set(home.x-Math.sin(angle)*8,elevationY(elevation),home.z+Math.cos(angle)*8);
-      manager.update(.12);
-      assert.equal(creature.directionIndex,index);
-      assert.equal(creature.view,view);
-      assert.equal(creature.currentPitchLayer,layer);
-      const expected=layer==='mid' ? DUNKLEOSTEUS_TEXTURE_URLS[view] : DUNKLEOSTEUS_PITCH_TEXTURE_URLS[layer][view];
-      assert.equal(creature.object3d.material.map!.image.currentSrc,expected);
-      assert.equal(debug.requestedTextureKey,`dunkleosteus_${layer}_${view}`);
-      assert.equal(debug.actualTextureKey,`dunkleosteus_${layer}_${view}`);
-      assert.equal(debug.usingPitchFallback,false);
+    const expectedUrl=DUNKLEOSTEUS_PITCH_TEXTURE_URLS[layer][view];
+    const expectedKey=expectedUrl.split('/').pop()!.replace(/\.png$/,'');
+    assert.equal(creature.object3d.material.map!.image.currentSrc,expectedUrl);
+    assert.equal(debug.requestedTextureKey,expectedKey);
+    assert.equal(debug.actualTextureKey,expectedKey);
+    assert.equal(debug.requestedTextureUrl,expectedUrl);
+    assert.equal(debug.actualTextureUrl,expectedUrl);
+    assert.equal(debug.usingPitchFallback,false);
+  };
+  const clockwise=[...Array.from({length:16},(_,index)=>index),0];
+  const counterclockwise=[0,...Array.from({length:15},(_,index)=>15-index),0];
+  for(const layer of PITCH_LAYERS) {
+    for(const index of clockwise) {
+      settleView(layer,index);
+      assert.ok(Math.abs(debug.directionIndexDelta ?? 0)<=1);
+      assert.equal(debug.nonAdjacentDirectionJump,false);
+    }
+    for(const index of counterclockwise) {
+      settleView(layer,index);
+      assert.ok(Math.abs(debug.directionIndexDelta ?? 0)<=1);
+      assert.equal(debug.nonAdjacentDirectionJump,false);
     }
   }
-  for(const [elevation,layer] of [[40,'top'],[-40,'bottom']] as const) {
-    const index=2,view='frontRight';const angle=index*Math.PI/8;
-    camera.position.set(home.x-Math.sin(angle)*8,elevationY(elevation),home.z+Math.cos(angle)*8);
-    manager.update(.12);
-    assert.equal(creature.directionIndex,index);assert.equal(creature.currentPitchLayer,layer);
-    assert.equal(creature.object3d.material.map!.image.currentSrc,DUNKLEOSTEUS_TEXTURE_URLS[view]);
-    assert.equal(debug.requestedTextureKey,`dunkleosteus_${layer}_front_right`);
-    assert.equal(debug.actualTextureKey,'dunkleosteus_mid_front_right');
-    assert.equal(debug.usingPitchFallback,true);
+  assert.equal(pending.length,48);assert.equal(maps.size,48);
+
+  const pitchSweep:readonly PitchLayer[]=['bottom','mid','top','mid','bottom'];
+  for(const index of [0,4,8,12]) {
+    for(const layer of pitchSweep) {
+      settleView(layer,index);
+      assert.equal(creature.directionIndex,index);
+    }
+  }
+  for(const index of [1,5,9,13,15]) {
+    for(const layer of PITCH_LAYERS) settleView(layer,index);
   }
 
   // Reachability through the same world constraint used by DiverControls.
@@ -226,27 +228,29 @@ try {
   const scale=creature.object3d.scale.clone();const y=creature.locomotionPosition.y;
   manager.dispose();
   assert.deepEqual(creature.object3d.scale,scale);assert.equal(creature.object3d.rotation.z,0);
-  assert.equal(creature.locomotionPosition.y,y);assert.equal(disposalCount,22);
+  assert.equal(creature.locomotionPosition.y,y);assert.equal(disposalCount,48);
 
-  // No direction borrows another asset: any missing PNG falls back at creature level.
+  // A failed formal asset rejects the complete set; Creature keeps its material fallback.
   pending.length=0;disposalCount=0;
   const missingLoading=dunkleosteusAssets.load();
-  const missingIntermediate='frontFrontRight';
-  for(const request of pending) request.finish(request.url!==DUNKLEOSTEUS_TEXTURE_URLS[missingIntermediate]);
+  assert.equal(pending.length,48);
+  const missingUrl=DUNKLEOSTEUS_PITCH_TEXTURE_URLS.top.frontRight;
+  for(const request of pending) request.finish(request.url!==missingUrl);
   await assert.rejects(missingLoading,/Directional texture failed to load/);
-  assert.equal(disposalCount,16);
+  assert.equal(disposalCount,48);
 
   // A missing original still has no safe alias and retains the orange fallback.
   pending.length=0;
   disposalCount=0;
   const fallbackManager=new CreatureManager(new THREE.Scene(),camera,()=>{},()=>{});
   const fallbackCreature=fallbackManager.spawnCreature(DUNKLEOSTEUS_SPAWN);
+  assert.equal(pending.length,48);
   for(const request of pending) request.finish(request.url!==DUNKLEOSTEUS_TEXTURE_URLS.front);
-  await tick();
+  await tick();await tick();
   assert.equal(fallbackCreature.textureStatus,'ERROR');
   assert.equal(fallbackCreature.object3d.visible,true);assert.equal(fallbackCreature.object3d.material.map,null);
   fallbackManager.dispose();
-  assert.equal(disposalCount,16);
+  assert.equal(disposalCount,48);
 } finally {THREE.Texture.prototype.dispose=originalDispose;}
 
 assert.equal(dunkleosteusSpecies.movement.locomotion.enabled,true);
@@ -255,4 +259,4 @@ if(dunkleosteusSpecies.movement.locomotion.enabled) {
   assert.equal(dunkleosteusSpecies.movement.locomotion.horizontalRoamRadius,3.5);
   assert.equal(dunkleosteusSpecies.movement.locomotion.maxTurnRateDegreesPerSecond,18);
 }
-console.log('PASS: reachable TOP/MID/BOTTOM within diver world limits, MID fallback, no reload, disposal, unchanged locomotion/ammonite');
+console.log('PASS: 48 formal pitch-direction assets, full sweeps, reachability, no reload, disposal, unchanged locomotion/ammonite');
