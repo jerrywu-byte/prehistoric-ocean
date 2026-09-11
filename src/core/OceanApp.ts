@@ -5,7 +5,7 @@ import {
   type CreatureDebugState,
   type CreatureProximityState,
 } from '../creatures/CreatureManager';
-import { AMMONITE_SPAWN, DUNKLEOSTEUS_SPAWN } from '../world/creatureSpawns';
+import { ACTIVE_ERA_SCENE } from '../world/eraScenePresets';
 import { createOceanEnvironment } from '../world/createOceanEnvironment';
 
 export class OceanApp {
@@ -83,8 +83,9 @@ export class OceanApp {
         onCreatureProximityChange,
         this.onCreatureDebugChange,
       );
-      this.creatureManager.spawnCreature(AMMONITE_SPAWN);
-      this.creatureManager.spawnCreature(DUNKLEOSTEUS_SPAWN);
+      for (const spawn of ACTIVE_ERA_SCENE.creatureSpawns) {
+        this.creatureManager.spawnCreature(spawn);
+      }
     } catch (error) {
       this.disableCreatureSystem('initialization', error);
     }
@@ -120,7 +121,7 @@ export class OceanApp {
       z: 0,
       textureStatus: 'ERROR',
       textureUrl: 'Unavailable',
-      speciesId: AMMONITE_SPAWN.speciesId,
+      speciesId: ACTIVE_ERA_SCENE.creatureSpawns[0]?.speciesId ?? 'none',
       materialMode: 'FALLBACK',
     });
   }
